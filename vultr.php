@@ -4,7 +4,7 @@
  *
  * @package blesta
  * @subpackage blesta.components.modules.vultr
- * @copyright Copyright (c) 2010, Phillips Data, Inc.
+ * @copyright Copyright (c) 2018, Phillips Data, Inc.
  * @license http://www.blesta.com/license/ The Blesta License Agreement
  * @link http://www.blesta.com/ Blesta
  */
@@ -249,7 +249,9 @@ class Vultr extends Module
         // Set the surcharge templates permissions
         $surcharge_templates_options = $fields->label(Language::_('Vultr.package_fields.surcharge_templates', true));
 
-        $allow_surcharge_templates_label = $fields->label(Language::_('Vultr.package_fields.allow_surcharge_templates', true));
+        $allow_surcharge_templates_label = $fields->label(
+            Language::_('Vultr.package_fields.allow_surcharge_templates', true)
+        );
         $surcharge_templates_options->attach(
             $fields->fieldRadio(
                 'meta[surcharge_templates]',
@@ -260,7 +262,9 @@ class Vultr extends Module
             )
         );
 
-        $disallow_surcharge_templates_label = $fields->label(Language::_('Vultr.package_fields.disallow_surcharge_templates', true));
+        $disallow_surcharge_templates_label = $fields->label(
+            Language::_('Vultr.package_fields.disallow_surcharge_templates', true)
+        );
         $surcharge_templates_options->attach(
             $fields->fieldRadio(
                 'meta[surcharge_templates]',
@@ -279,7 +283,7 @@ class Vultr extends Module
     /**
      * Gets a list of available server types.
      *
-     * @return array A key/value array of available server types and their languages
+     * @return array A key/value array of available server types and their language
      */
     private function getServerTypes()
     {
@@ -386,15 +390,22 @@ class Vultr extends Module
 
         foreach ($result_os as $os) {
             if (!in_array($os->OSID, $excluded_os)) {
-                if (!$os->windows || is_null($package) || ($os->windows && $this->Html->ifSet($package->meta->surcharge_templates) == 'allow')) {
+                if (!$os->windows
+                    || is_null($package)
+                    || ($os->windows && $this->Html->ifSet($package->meta->surcharge_templates) == 'allow')
+                ) {
                     $templates['os-' . $os->OSID] = $os->name . ($os->windows && is_null($package) ? ' (+$16)' : null);
                 }
             }
         }
 
         foreach ($result_app as $app) {
-            if (!$app->surcharge || is_null($package) || ($app->surcharge && $this->Html->ifSet($package->meta->surcharge_templates) == 'allow')) {
-                $templates['app-' . $app->APPID] = $app->deploy_name . ($app->surcharge && is_null($package) ? ' (+$' . (int) $app->surcharge . ')' : null);
+            if (!$app->surcharge
+                || is_null($package)
+                || ($app->surcharge && $this->Html->ifSet($package->meta->surcharge_templates) == 'allow')
+            ) {
+                $templates['app-' . $app->APPID] = $app->deploy_name
+                    . ($app->surcharge && is_null($package) ? ' (+$' . (int) $app->surcharge . ')' : null);
             }
         }
 
@@ -447,7 +458,7 @@ class Vultr extends Module
     /**
      * Parse the application information by replacing and removing Vultr
      * apparitions, to return it as a white label information.
-     * 
+     *
      * @param mixed $api The vultr api instance
      * @param stdClass $service A stdClass object representing the current service
      * @return stdClass An object containing the application details
@@ -563,23 +574,8 @@ class Vultr extends Module
      */
     public function editPackage($package, array $vars = null)
     {
-        // Set rules to validate input data
-        $this->Input->setRules($this->getPackageRules($vars));
-
-        // Build meta data to return
-        $meta = [];
-        if ($this->Input->validates($vars)) {
-            // Return all package meta fields
-            foreach ($vars['meta'] as $key => $value) {
-                $meta[] = [
-                    'key' => $key,
-                    'value' => $value,
-                    'encrypted' => 0
-                ];
-            }
-        }
-
-        return $meta;
+        // The same as adding
+        return $this->addPackage($vars);
     }
 
     /**
@@ -902,10 +898,10 @@ class Vultr extends Module
         Loader::loadHelpers($this, ['Html']);
 
         // Get the available templates
-        $templates = $this->getTemplates($module_row, $package);
+        $templates = $this->getTemplates($this->module_row, $package);
 
         // Get the available locations
-        $locations = $this->getLocations($module_row, $package);
+        $locations = $this->getLocations($this->module_row, $package);
 
         $fields = new ModuleFields();
 
@@ -1041,6 +1037,13 @@ class Vultr extends Module
      */
     public function validateService($package, array $vars = null)
     {
+        $rules = $this->getServiceRules($vars, null, true);
+
+        // Template must be given only if it can be set by the client
+        if (isset($package->meta->set_template) && $package->meta->set_template == 'client') {
+            unset($rules['vultr_template']);
+        }
+
         $this->Input->setRules($this->getServiceRules($vars, $package));
 
         return $this->Input->validates($vars);
@@ -1055,7 +1058,20 @@ class Vultr extends Module
      */
     public function validateServiceEdit($service, array $vars = null)
     {
-        $this->Input->setRules($this->getServiceRules($vars, null, true));
+        $rules = $this->getServiceRules($vars, null, true);
+
+        // Get the service fields
+        $service_fields = $this->serviceFieldsToObject($service->fields);
+
+        // Template should only be checked if it has changed
+        if (!isset($service_fields->vultr_template)
+            || !isset($vars['vultr_template'])
+            || $service_fields->vultr_template == $vars['vultr_template']
+        ) {
+            unset($rules['vultr_template']);
+        }
+
+        $this->Input->setRules($rules);
 
         return $this->Input->validates($vars);
     }
@@ -1082,29 +1098,24 @@ class Vultr extends Module
                     'rule' => [[$this, 'validateLocation']],
                     'message' => Language::_('Vultr.!error.vultr_location.valid', true)
                 ]
+            ],
+            'vultr_template' => [
+                'valid' => [
+                    'rule' => [[$this, 'validateTemplate']],
+                    'message' => Language::_('Vultr.!error.vultr_template.valid', true)
+                ]
+            ],
+            'vultr_subid' => [
+                'valid' => [
+                    'if_set' => true,
+                    'rule' => [
+                        [$this, 'validateSubID'],
+                        isset($package->meta->server_type) ? $package->meta->server_type : 'server'
+                    ],
+                    'message' => Language::_('Vultr.!error.vultr_subid.valid', true)
+                ]
             ]
         ];
-
-        // Template must be given if it can be set by the client
-        if (!is_null($package)) {
-            if (isset($package->meta->set_template) && $package->meta->set_template == 'client') {
-                $rules['vultr_template'] = [
-                    'valid' => [
-                        'rule' => [[$this, 'validateTemplate']],
-                        'message' => Language::_('Vultr.!error.vultr_template.valid', true)
-                    ]
-                ];
-            }
-        } else {
-            if (isset($service_fields->vultr_template) && isset($vars['vultr_template']) && $service_fields->vultr_template != $vars['vultr_template']) {
-                $rules['vultr_template'] = [
-                    'valid' => [
-                        'rule' => [[$this, 'validateTemplate']],
-                        'message' => Language::_('Vultr.!error.vultr_template.valid', true)
-                    ]
-                ];
-            }
-        }
 
         if ($edit) {
             // If this is an edit and none of the following fields are given then don't
@@ -1158,8 +1169,13 @@ class Vultr extends Module
      * @see Module::getModule()
      * @see Module::getModuleRow()
      */
-    public function addService($package, array $vars = null, $parent_package = null, $parent_service = null, $status = 'pending')
-    {
+    public function addService(
+        $package,
+        array $vars = null,
+        $parent_package = null,
+        $parent_service = null,
+        $status = 'pending'
+    ) {
         // Get the module row
         $row = $this->getModuleRow();
 
@@ -1182,7 +1198,7 @@ class Vultr extends Module
         }
 
         // Only provision the service if 'use_module' is true
-        if ($vars['use_module'] == 'true' && empty($vars['vultr_subid'])) {
+        if ($vars['use_module'] == 'true') {
             $this->log('api.vultr.com|create', serialize($params), 'input', true);
 
             try {
@@ -1197,18 +1213,27 @@ class Vultr extends Module
                     $vultr_api = new VultrBaremetal($api);
                 }
 
-                // Create the vultr server
-                $result = $this->parseResponse($vultr_api->create($params));
+                if (empty($vars['vultr_subid'])) {
+                    // Create the vultr server
+                    $result = $this->parseResponse($vultr_api->create($params));
 
-                // Enable automatic backup
-                if (isset($vars['configoptions']['enable_backup']) && $vars['configoptions']['enable_backup'] == 'enable') {
-                    // Only virtual machines supports automatic backups
-                    if ($package->meta->server_type == 'server') {
-                        $params = [
-                            'SUBID' => $result->SUBID
-                        ];
-                        $this->log('api.vultr.com|backup_enable', serialize($params), 'input', true);
-                        $this->parseResponse($vultr_api->backupEnable($params));
+                    // Enable automatic backup
+                    if (isset($vars['configoptions']['enable_backup'])
+                        && $vars['configoptions']['enable_backup'] == 'enable'
+                    ) {
+                        // Only virtual machines supports automatic backups
+                        if ($package->meta->server_type == 'server') {
+                            $params = [
+                                'SUBID' => $result->SUBID
+                            ];
+                            $this->log('api.vultr.com|backup_enable', serialize($params), 'input', true);
+                            $this->parseResponse($vultr_api->backupEnable($params));
+                        }
+                    }
+                } else {
+                    $servers = $vultr_api->listServers()->response();
+                    if (!isset($servers->{$vars['vultr_subid']})) {
+                        $this->Input->setErrors(['api' => ['internal' => Language::_('Vultr.!error.invalid_vultr_subid', true)]]);
                     }
                 }
             } catch (Exception $e) {
@@ -1246,7 +1271,9 @@ class Vultr extends Module
             ],
             [
                 'key' => 'vultr_subid',
-                'value' => isset($result->SUBID) ? $result->SUBID : (isset($vars['vultr_subid']) ? $vars['vultr_subid'] : null),
+                'value' => isset($result->SUBID)
+                    ? $result->SUBID
+                    : (isset($vars['vultr_subid']) ? $vars['vultr_subid'] : null),
                 'encrypted' => 0
             ],
             [
@@ -1300,7 +1327,7 @@ class Vultr extends Module
         $params = $this->getFieldsFromInput((array) $vars, $package);
 
         // Validate service
-        $this->validateServiceEdit($package, $vars);
+        $this->validateServiceEdit($service, $vars);
 
         if ($this->Input->errors()) {
             return;
@@ -1564,8 +1591,13 @@ class Vultr extends Module
      * @see Module::getModule()
      * @see Module::getModuleRow()
      */
-    public function changeServicePackage($package_from, $package_to, $service, $parent_package = null, $parent_service = null)
-    {
+    public function changeServicePackage(
+        $package_from,
+        $package_to,
+        $service,
+        $parent_package = null,
+        $parent_service = null
+    ) {
         // Get the module row
         $row = $this->getModuleRow();
 
@@ -1745,7 +1777,7 @@ class Vultr extends Module
         }
 
         // Perform actions
-        if (!empty($post)) {
+        if (!empty($post['action'])) {
             switch ($post['action']) {
                 case 'restart':
                     $params = [
@@ -1783,6 +1815,7 @@ class Vultr extends Module
                         $this->Services->edit($service->id, $data);
 
                         if ($this->Services->errors()) {
+                            $vars = (object) $post;
                             $this->Input->setErrors($this->Services->errors());
                         }
                     }
@@ -1866,7 +1899,8 @@ class Vultr extends Module
         }
 
         // Get application details
-        if (trim($server_details['os']) == 'Application') {
+        $application_details = new stdClass();
+        if (isset($server_details['os']) && trim($server_details['os']) == 'Application') {
             $application_details = $this->getApplicationDetails($vultr_api, $service);
         }
 
@@ -1876,7 +1910,6 @@ class Vultr extends Module
         $this->view->set('service_fields', $service_fields);
         $this->view->set('server_details', $server_details);
         $this->view->set('application_details', $application_details);
-        $this->view->set('vars', (isset($vars) ? $vars : new stdClass()));
 
         $this->view->setDefaultView('components' . DS . 'modules' . DS . 'vultr' . DS);
 
@@ -2112,7 +2145,7 @@ class Vultr extends Module
         }
 
         // Perform actions
-        if (!empty($post)) {
+        if (!empty($post['action'])) {
             switch ($post['action']) {
                 case 'restart':
                     $params = [
@@ -2150,6 +2183,7 @@ class Vultr extends Module
                         $this->Services->edit($service->id, $data);
 
                         if ($this->Services->errors()) {
+                            $vars = (object) $post;
                             $this->Input->setErrors($this->Services->errors());
                         }
                     }
@@ -2233,7 +2267,8 @@ class Vultr extends Module
         }
 
         // Get application details
-        if (trim($server_details['os']) == 'Application') {
+        $application_details = new stdClass();
+        if (isset($server_details['os']) && trim($server_details['os']) == 'Application') {
             $application_details = $this->getApplicationDetails($vultr_api, $service);
         }
 
@@ -2243,7 +2278,6 @@ class Vultr extends Module
         $this->view->set('service_fields', $service_fields);
         $this->view->set('server_details', $server_details);
         $this->view->set('application_details', $application_details);
-        $this->view->set('vars', (isset($vars) ? $vars : new stdClass()));
 
         $this->view->setDefaultView('components' . DS . 'modules' . DS . 'vultr' . DS);
 
@@ -2494,10 +2528,9 @@ class Vultr extends Module
         }
         unset($rows);
 
-        $location = trim($location);
         $valid_locations = $this->getLocations($module_row);
 
-        return array_key_exists($location, $valid_locations);
+        return array_key_exists(trim($location), $valid_locations);
     }
 
     /**
@@ -2517,10 +2550,47 @@ class Vultr extends Module
         }
         unset($rows);
 
-        $template = trim($template);
         $valid_templates = $this->getTemplates($module_row);
 
-        return array_key_exists($template, $valid_templates);
+        return array_key_exists(trim($template), $valid_templates);
+    }
+
+    /**
+     * Validates that the given subid is valid.
+     *
+     * @param string $subid The subid to validate
+     * @param string $server_type The type of server used for this service
+     * @return bool True if the subid is valid, false otherwise
+     */
+    public function validateSubID($subid, $server_type)
+    {
+        if (empty($subid)) {
+            return true;
+        }
+
+        // Fetch the 1st account from the list of accounts
+        $module_row = null;
+        $rows = $this->getModuleRows();
+
+        if (isset($rows[0])) {
+            $module_row = $rows[0];
+        }
+        unset($rows);
+
+        // Initialize the Vultr API
+        $api = $this->getApi($module_row->meta->api_key);
+
+        if ($server_type == 'server') {
+            $api->loadCommand('vultr_server');
+            $vultr_api = new VultrServer($api);
+        } else {
+            $api->loadCommand('vultr_baremetal');
+            $vultr_api = new VultrBaremetal($api);
+        }
+
+        $servers = $vultr_api->listServers()->response();
+
+        return property_exists($servers, $subid);
     }
 
     /**
@@ -2608,9 +2678,6 @@ class Vultr extends Module
      */
     private function parseResponse($response)
     {
-        // Get the module row
-        $row = $this->getModuleRow();
-
         $success = true;
 
         if ($response->status() == 'error') {
