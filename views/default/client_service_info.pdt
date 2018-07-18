@@ -1,0 +1,24 @@
+    <div class="table-responsive">
+        <table class="table table-curved table-striped">
+            <thead>
+                <tr>
+                    <th><i class="fa fa-share fa-flip-vertical"></i></th>
+                    <th><?php $this->_('Vultr.service_info.hostname'); ?></th>
+                    <th><?php $this->_('Vultr.service_info.os'); ?></th>
+                    <th><?php $this->_('Vultr.service_info.location'); ?></th>
+                    <th><?php $this->_('Vultr.service_info.main_ip'); ?></th>
+                    <th><?php $this->_('Vultr.service_info.default_password'); ?></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td></td>
+                    <td><?php $this->Html->_($service_fields->vultr_hostname); ?></td>
+                    <td><?php $this->Html->_($server_details->os); ?></td>
+                    <td><?php $this->Html->_($server_details->location); ?></td>
+                    <td><?php $this->Html->_($server_details->main_ip); ?></td>
+                    <td><?php $this->Html->_($server_details->default_password);?></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
