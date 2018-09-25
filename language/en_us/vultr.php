@@ -200,6 +200,6 @@ $lang['Vultr.!error.api.internal'] = 'An internal error occurred, or the server 
 $lang['Vultr.!error.module_row.missing'] = 'An internal error occurred. The module row is unavailable.';
 
 $lang['Vultr.!error.vultr_hostname.format'] = 'Please enter a valid hostname, e.g. domain.com.';
-$lang['Vultr.!error.vultr_location.valid'] = 'Plese select a valid location.';
-$lang['Vultr.!error.vultr_template.valid'] = 'Plese select a valid template.';
-$lang['Vultr.!error.vultr_subid.valid'] = 'Plese enter a valid Vultr SUBID.';
+$lang['Vultr.!error.vultr_location.valid'] = 'Please select a valid location.';
+$lang['Vultr.!error.vultr_template.valid'] = 'Please select a valid template.';
+$lang['Vultr.!error.vultr_subid.valid'] = 'Please enter a valid Vultr SUBID.';
