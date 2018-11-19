@@ -1037,14 +1037,14 @@ class Vultr extends Module
      */
     public function validateService($package, array $vars = null)
     {
-        $rules = $this->getServiceRules($vars, null, true);
+        $rules = $this->getServiceRules($vars, $package, false);
 
         // Template must be given only if it can be set by the client
-        if (isset($package->meta->set_template) && $package->meta->set_template == 'client') {
+        if (isset($package->meta->set_template) && $package->meta->set_template == 'admin') {
             unset($rules['vultr_template']);
         }
 
-        $this->Input->setRules($this->getServiceRules($vars, $package));
+        $this->Input->setRules($rules);
 
         return $this->Input->validates($vars);
     }
@@ -1089,18 +1089,21 @@ class Vultr extends Module
         $rules = [
             'vultr_hostname' => [
                 'format' => [
+                    'if_set' => $edit,
                     'rule' => [[$this, 'validateHostName']],
                     'message' => Language::_('Vultr.!error.vultr_hostname.format', true)
                 ]
             ],
             'vultr_location' => [
                 'valid' => [
+                    'if_set' => $edit,
                     'rule' => [[$this, 'validateLocation']],
                     'message' => Language::_('Vultr.!error.vultr_location.valid', true)
                 ]
             ],
             'vultr_template' => [
                 'valid' => [
+                    'if_set' => $edit,
                     'rule' => [[$this, 'validateTemplate']],
                     'message' => Language::_('Vultr.!error.vultr_template.valid', true)
                 ]
@@ -1118,20 +1121,6 @@ class Vultr extends Module
         ];
 
         if ($edit) {
-            // If this is an edit and none of the following fields are given then don't
-            // evaluate any of the fileds as they will not be updated.
-            if (!isset($vars['vultr_template'])) {
-                unset($rules['vultr_template']);
-            }
-
-            if (!isset($vars['vultr_hostname'])) {
-                unset($rules['vultr_hostname']);
-            }
-
-            if (!isset($vars['vultr_location'])) {
-                unset($rules['vultr_location']);
-            }
-
             // If this is an edit evaluate the Vultr subid
             $rules['vultr_subid'] = [
                 'valid' => [
