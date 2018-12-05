@@ -1186,6 +1186,9 @@ class Vultr extends Module
             return;
         }
 
+        // Disallow capital letters in hostname
+        $vars['vultr_hostname'] = strtolower($vars['vultr_hostname']);
+
         // Only provision the service if 'use_module' is true
         if ($vars['use_module'] == 'true') {
             $this->log('api.vultr.com|create', serialize($params), 'input', true);
@@ -1321,6 +1324,9 @@ class Vultr extends Module
         if ($this->Input->errors()) {
             return;
         }
+
+        // Disallow capital letters in hostname
+        $vars['vultr_hostname'] = strtolower($vars['vultr_hostname']);
 
         // Check for fields that changed
         $delta = [];
@@ -2496,7 +2502,7 @@ class Vultr extends Module
 
         return $this->Input->matches(
             $host_name,
-            '/^([a-z0-9]|[a-z0-9][a-z0-9\-]{0,61}[a-z0-9])(\.([a-z0-9]|[a-z0-9][a-z0-9\-]{0,61}[a-z0-9]))+$/'
+            '/^([a-z0-9]|[a-z0-9][a-z0-9\-]{0,61}[a-z0-9])(\.([a-z0-9]|[a-z0-9][a-z0-9\-]{0,61}[a-z0-9]))+$/i'
         );
     }
 
@@ -2640,9 +2646,9 @@ class Vultr extends Module
                 'VPSPLANID' => $package->meta->server_plan,
                 'OSID' => $osid,
                 'enable_ipv6' => isset($vars['vultr_enable_ipv6']) ? $vars['vultr_enable_ipv6'] : null,
-                'label' => isset($vars['vultr_hostname']) ? $vars['vultr_hostname'] : null,
+                'label' => isset($vars['vultr_hostname']) ? strtolower($vars['vultr_hostname']) : null,
                 'APPID' => $appid,
-                'hostname' => isset($vars['vultr_hostname']) ? $vars['vultr_hostname'] : null
+                'hostname' => isset($vars['vultr_hostname']) ? strtolower($vars['vultr_hostname']) : null
             ];
         } else {
             $fields = [
@@ -2650,9 +2656,9 @@ class Vultr extends Module
                 'METALPLANID' => $package->meta->baremetal_plan,
                 'OSID' => $osid,
                 'enable_ipv6' => isset($vars['vultr_enable_ipv6']) ? $vars['vultr_enable_ipv6'] : null,
-                'label' => isset($vars['vultr_hostname']) ? $vars['vultr_hostname'] : null,
+                'label' => isset($vars['vultr_hostname']) ? strtolower($vars['vultr_hostname']) : null,
                 'APPID' => $appid,
-                'hostname' => isset($vars['vultr_hostname']) ? $vars['vultr_hostname'] : null
+                'hostname' => isset($vars['vultr_hostname']) ? strtolower($vars['vultr_hostname']) : null
             ];
         }
 
