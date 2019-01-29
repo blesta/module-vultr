@@ -1220,6 +1220,11 @@ class Vultr extends Module
                             ];
                             $this->log('api.vultr.com|backup_enable', serialize($params), 'input', true);
                             $this->parseResponse($vultr_api->backupEnable($params));
+
+                            // Updated backups to be daily
+                            $params['cron_type'] = 'daily';
+                            $this->log('api.vultr.com|backup_daily', serialize($params), 'input', true);
+                            $this->parseResponse($vultr_api->backupSetSchedule($params));
                         }
                     }
                 } else {
