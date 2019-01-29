@@ -13,21 +13,23 @@
                 <tr class="heading_row">
                     <td><span><?php $this->_('Vultr.tab_snapshots.heading_row_snapshot_id'); ?></span></td>
                     <td><span><?php $this->_('Vultr.tab_snapshots.heading_row_description'); ?></span></td>
+                    <td><span><?php $this->_('Vultr.tab_snapshots.heading_row_status'); ?></span></td>
                     <td class="last"><span><?php $this->_('Vultr.tab_snapshots.heading_row_options'); ?></span></td>
                 </tr>
                 <?php
                 $i = 0;
-                foreach ($snapshots as $snapshotid => $description) {
+                foreach ($snapshots as $snapshot) {
                 ?>
                 <tr<?php echo ($i % 2 == 1) ? ' class="odd_row"' : ''; ?>>
-                    <td><strong><?php $this->Html->_($snapshotid); ?></strong></td>
-                    <td><?php $this->Html->_($description); ?></td>
+                    <td><strong><?php $this->Html->_($snapshot->SNAPSHOTID); ?></strong></td>
+                    <td><?php $this->Html->_($snapshot->description); ?></td>
+                    <td><?php echo ucwords($this->Html->safe($snapshot->status)); ?></td>
                     <td>
-                        <a class="restore-snapshot submit" href="#" data-id="<?php $this->Html->_($snapshotid); ?>">
+                        <a class="restore-snapshot submit restore-snapshot" href="#" data-id="<?php $this->Html->_($snapshot->SNAPSHOTID); ?>">
                             <?php $this->_('Vultr.tab_snapshots.restore_snapshot'); ?>
                         </a>,
 
-                        <a class="manage submit" href="#" data-id="<?php $this->Html->_($snapshotid); ?>">
+                        <a class="manage submit remove-snapshot" href="#" data-id="<?php $this->Html->_($snapshot->SNAPSHOTID); ?>">
                             <?php $this->_('Vultr.tab_snapshots.remove_snapshot'); ?>
                         </a>
                     </td>
