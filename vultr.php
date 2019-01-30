@@ -1269,6 +1269,11 @@ class Vultr extends Module
                 'encrypted' => 0
             ],
             [
+                'key' => 'vultr_snapshots',
+                'value' => [],
+                'encrypted' => 0
+            ],
+            [
                 'key' => 'vultr_dns_domains',
                 'value' => [],
                 'encrypted' => 0
@@ -1403,7 +1408,8 @@ class Vultr extends Module
         // Set fields to update locally
         $fields = [
             'vultr_subid',
-            'vultr_template'
+            'vultr_template',
+            'vultr_snapshots'
         ];
 
         foreach ($fields as $field) {
@@ -2249,7 +2255,21 @@ class Vultr extends Module
                         'SUBID' => $service_fields->vultr_subid,
                         'description' => $this->Html->safe($post['description'])
                     ];
-                    $this->parseResponse($snapshot_api->create($params));
+                    $result = $this->parseResponse($snapshot_api->create($params));
+
+                    if (isset($result->SNAPSHOTID)) {
+                        Loader::loadModels($this, ['Services']);
+                        $service_fields->vultr_snapshots = $service_fields->vultr_snapshots + [
+                            $result->SNAPSHOTID => $this->Html->safe($post['description'])
+                        ];
+                        $data = [
+                            'vultr_snapshots' => $service_fields->vultr_snapshots
+                        ];
+                        $this->Services->edit($service->id, $data);
+                        if ($this->Services->errors()) {
+                            $this->Input->setErrors($this->Services->errors());
+                        }
+                    }
 
                     $vars = (object) $post;
                     break;
@@ -2258,6 +2278,17 @@ class Vultr extends Module
                         'SNAPSHOTID' => $this->Html->safe($post['snapshotid'])
                     ];
                     $this->parseResponse($snapshot_api->destroy($params));
+
+                    unset($service_fields->vultr_snapshots[$post['snapshotid']]);
+
+                    $data = [
+                        'vultr_snapshots' => $service_fields->vultr_snapshots
+                    ];
+
+                    $this->Services->edit($service->id, $data);
+                    if ($this->Services->errors()) {
+                        $this->Input->setErrors($this->Services->errors());
+                    }
 
                     $vars = (object) $post;
                     break;
@@ -2276,7 +2307,15 @@ class Vultr extends Module
         }
 
         // Get server snapshots
-        $snapshots = $this->parseResponse($snapshot_api->listSnapshots());
+        $snapshots = $service_fields->vultr_snapshots;
+        $vultr_snapshots = $this->parseResponse($snapshot_api->listSnapshots());
+        foreach ($snapshots as $id => $description) {
+            if (isset($vultr_snapshots->{$id})) {
+                $snapshots[$id] = $vultr_snapshots->{$id};
+            } else {
+                unset($snapshots[$id]);
+            }
+        }
 
         $this->view->set('module_row', $row);
         $this->view->set('package', $package);
