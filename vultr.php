@@ -1386,8 +1386,7 @@ class Vultr extends Module
                 }
             }
 
-            // Enable automatic backup
-            Loader::loadHelpers($this, ['Form']);
+            // Enable/Disable automatic backup
             $enable_backup = null;
             foreach ($service->options as $service_option) {
                 if ($service_option->option_name == 'enable_backup') {
@@ -1395,7 +1394,6 @@ class Vultr extends Module
                     break;
                 }
             }
-            $service_options = $this->Form->collapseObjectArray($service->options, 'option_value', 'option_name');
             if (isset($vars['configoptions']['enable_backup']) && $vars['configoptions']['enable_backup'] == 'enable') {
                 // Only virtual machines supports automatic backups
                 if ($package->meta->server_type == 'server') {
