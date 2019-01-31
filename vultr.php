@@ -1220,6 +1220,11 @@ class Vultr extends Module
                             ];
                             $this->log('api.vultr.com|backup_enable', serialize($params), 'input', true);
                             $this->parseResponse($vultr_api->backupEnable($params));
+
+                            // Updated backups to be daily
+                            $params['cron_type'] = 'daily';
+                            $this->log('api.vultr.com|backup_daily', serialize($params), 'input', true);
+                            $this->parseResponse($vultr_api->backupSetSchedule($params));
                         }
                     }
                 } else {
@@ -1326,7 +1331,9 @@ class Vultr extends Module
         }
 
         // Disallow capital letters in hostname
-        $vars['vultr_hostname'] = strtolower($vars['vultr_hostname']);
+        if (isset($vars['vultr_hostname'])) {
+            $vars['vultr_hostname'] = strtolower($vars['vultr_hostname']);
+        }
 
         // Check for fields that changed
         $delta = [];
@@ -1386,7 +1393,7 @@ class Vultr extends Module
                 }
             }
 
-            // Enable/Disable automatic backup
+            // Enable automatic backup
             $enable_backup = null;
             foreach ($service->options as $service_option) {
                 if ($service_option->option_name == 'enable_backup') {
@@ -1394,7 +1401,10 @@ class Vultr extends Module
                     break;
                 }
             }
-            if (isset($vars['configoptions']['enable_backup']) && $vars['configoptions']['enable_backup'] == 'enable') {
+            if (isset($vars['configoptions']['enable_backup'])
+                && $vars['configoptions']['enable_backup'] == 'enable'
+                && (!$enable_backup || $enable_backup->option_value != 'enable')
+            ) {
                 // Only virtual machines supports automatic backups
                 if ($package->meta->server_type == 'server') {
                     $params = [
@@ -1402,6 +1412,11 @@ class Vultr extends Module
                     ];
                     $this->log('api.vultr.com|backup_enable', serialize($params), 'input', true);
                     $this->parseResponse($vultr_api->backupEnable($params));
+
+                    // Updated backups to be daily
+                    $params['cron_type'] = 'daily';
+                    $this->log('api.vultr.com|backup_daily', serialize($params), 'input', true);
+                    $this->parseResponse($vultr_api->backupSetSchedule($params));
                 }
             } elseif ($enable_backup
                 && $enable_backup->option_value == 'enable'
