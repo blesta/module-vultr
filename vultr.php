@@ -1387,6 +1387,15 @@ class Vultr extends Module
             }
 
             // Enable automatic backup
+            Loader::loadHelpers($this, ['Form']);
+            $enable_backup = null;
+            foreach ($service->options as $service_option) {
+                if ($service_option->option_name == 'enable_backup') {
+                    $enable_backup = $service_option;
+                    break;
+                }
+            }
+            $service_options = $this->Form->collapseObjectArray($service->options, 'option_value', 'option_name');
             if (isset($vars['configoptions']['enable_backup']) && $vars['configoptions']['enable_backup'] == 'enable') {
                 // Only virtual machines supports automatic backups
                 if ($package->meta->server_type == 'server') {
@@ -1395,6 +1404,18 @@ class Vultr extends Module
                     ];
                     $this->log('api.vultr.com|backup_enable', serialize($params), 'input', true);
                     $this->parseResponse($vultr_api->backupEnable($params));
+                }
+            } elseif ($enable_backup
+                && $enable_backup->option_value == 'enable'
+                && (isset($vars['staff_id']) || $enable_backup->option_editable)
+            ) {
+                // Only virtual machines supports automatic backups
+                if ($package->meta->server_type == 'server') {
+                    $params = [
+                        'SUBID' => $service_fields->vultr_subid
+                    ];
+                    $this->log('api.vultr.com|backup_enable', serialize($params), 'input', true);
+                    $this->parseResponse($vultr_api->backupDisable($params));
                 }
             }
 
