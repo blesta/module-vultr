@@ -1,7 +1,7 @@
     <h4><?php $this->_('Vultr.tab_client_actions.heading_status'); ?></h4>
 
     <?php
-    if($this->Html->ifSet($server_details->server_state) == 'locked') {
+    if ($this->Html->ifSet($server_details->server_state) == 'locked') {
         $status_class = 'warning';
         $status = 'locked';
     } elseif ($this->Html->ifSet($server_details->power_status) == 'running' || $this->Html->ifSet($server_details->status) == 'active') {

@@ -1922,7 +1922,7 @@ class Vultr extends Module
     public function tabClientActions($package, $service, array $get = null, array $post = null, array $files = null)
     {
         // Get the actions tab
-        return $this->getTabActions($package, $service, $post, 'tab_client_actions');
+        return $this->getTabActions($package, $service, $post, true);
     }
 
     /**
@@ -2004,7 +2004,7 @@ class Vultr extends Module
     public function tabClientSnapshots($package, $service, array $get = null, array $post = null, array $files = null)
     {
         // Get snapshots tab
-        return $this->getTabSnapshots($package, $service, $post, 'tab_client_snapshots');
+        return $this->getTabSnapshots($package, $service, $post, true);
     }
 
     /**
@@ -2090,16 +2090,16 @@ class Vultr extends Module
      * @param stdClass $package A stdClass object representing the current package
      * @param stdClass $service A stdClass object representing the current service
      * @param array $post Any POST parameters
-     * @param string $template_name The name of the template to us
+     * @param bool $client Whether to use the client view template
      * @return string The string representing the contents of this tab
      */
-    private function getTabActions($package, $service, array $post = null, $template_name = 'tab_actions')
+    private function getTabActions($package, $service, array $post = null, $client = false)
     {
         // Get module row
         $row = $this->getModuleRow();
 
         // Set the current view
-        $this->view = new View($template_name, 'default');
+        $this->view = new View($client ? 'tab_client_actions' : 'tab_actions', 'default');
         $this->view->base_uri = $this->base_uri;
 
         // Load the helpers required for this view
@@ -2221,16 +2221,16 @@ class Vultr extends Module
      * @param stdClass $package A stdClass object representing the current package
      * @param stdClass $service A stdClass object representing the current service
      * @param array $post Any POST parameters
-     * @param string $template_name The name of the template to us
+     * @param bool $client Whether to use the client view template
      * @return string The string representing the contents of this tab
      */
-    private function getTabSnapshots($package, $service, array $post = null, $template_name = 'tab_snapshots')
+    private function getTabSnapshots($package, $service, array $post = null, $client = false)
     {
         // Get module row
         $row = $this->getModuleRow();
 
         // Set the current view
-        $this->view = new View($template_name, 'default');
+        $this->view = new View($client ? 'tab_client_snapshots' : 'tab_snapshots', 'default');
         $this->view->base_uri = $this->base_uri;
 
         // Load the helpers required for this view
