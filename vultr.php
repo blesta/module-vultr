@@ -1414,7 +1414,7 @@ class Vultr extends Module
                     $params = [
                         'SUBID' => $service_fields->vultr_subid
                     ];
-                    $this->log('api.vultr.com|backup_enable', serialize($params), 'input', true);
+                    $this->log('api.vultr.com|backup_disable', serialize($params), 'input', true);
                     $this->parseResponse($vultr_api->backupDisable($params));
                 }
             }
