@@ -1394,7 +1394,17 @@ class Vultr extends Module
             }
 
             // Enable automatic backup
-            if (isset($vars['configoptions']['enable_backup']) && $vars['configoptions']['enable_backup'] == 'enable') {
+            $enable_backup = null;
+            foreach ($service->options as $service_option) {
+                if ($service_option->option_name == 'enable_backup') {
+                    $enable_backup = $service_option;
+                    break;
+                }
+            }
+            if (isset($vars['configoptions']['enable_backup'])
+                && $vars['configoptions']['enable_backup'] == 'enable'
+                && (!$enable_backup || $enable_backup->option_value != 'enable')
+            ) {
                 // Only virtual machines supports automatic backups
                 if ($package->meta->server_type == 'server') {
                     $params = [
