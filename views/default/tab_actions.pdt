@@ -2,7 +2,7 @@
     <div class="title_row first">
         <h3><?php $this->_('Vultr.tab_actions.status_title'); ?></h3>
     </div>
-    <div class="pad">
+    <div class="pad" id="vultr_status_badge">
         <?php
         if ($this->Html->ifSet($server_details->server_state) == 'locked') {
             $status_class = 'warning';
@@ -25,7 +25,7 @@
         <h3><?php $this->_('Vultr.tab_actions.server_title'); ?></h3>
     </div>
     <div class="pad">
-        <div class="row options">
+        <div class="row options" id="vultr_actions">
             <div class="col-md-4">
                 <?php
                 $this->Form->create();
@@ -127,6 +127,7 @@
 
     <script type="text/javascript">
         $(document).ready(function() {
+            setVultrInterval('<?php echo Configure::get('Vultr.page_refresh_rate_fast');?>', '');
             <?php
             if ($this->Html->ifSet($vars->template, false)) {
             ?>
@@ -148,6 +149,32 @@
 
             function showSection(id) {
                 $('#' + id).show();
+            }
+
+            function setVultrInterval(refresh_rate, old_action_data) {
+                var interval = setInterval(function() {
+                    $(this).blestaRequest("GET",
+                        '<?php echo $this->base_uri . 'clients/servicetab/' . $this->Html->ifSet($service->client_id) . '/' . $this->Html->ifSet($service->id) . '/tabActions/';?>',
+                        null,
+                        // Success response
+                        function(data) {
+                            if (data.replacer && data.content) {
+                                var badge_html = $('div', data.content).filter('#vultr_status_badge').html();
+                                $('#vultr_status_badge').html(badge_html);
+
+                                var html = $('div', data.content).filter('#vultr_actions').html();
+                                $('#vultr_actions').html(html);
+
+                                refresh_rate = (html == old_action_data) ? '<?php echo Configure::get('Vultr.page_refresh_rate');?>' : '<?php echo Configure::get('Vultr.page_refresh_rate_fast');?>';
+
+                                clearInterval(interval);
+                                setVultrInterval(refresh_rate, html);
+                            }
+                        },
+                        null,
+                        {dataType: 'json'}
+                    );
+                }, refresh_rate);
             }
         });
     </script>

@@ -21,6 +21,9 @@ class Vultr extends Module
         // Load the language required by this module
         Language::loadLang('vultr', null, dirname(__FILE__) . DS . 'language' . DS);
 
+        // Load config
+        Configure::load('vultr', dirname(__FILE__) . DS . 'config' . DS);
+
         // Load module config
         $this->loadConfig(dirname(__FILE__) . DS . 'config.json');
     }
