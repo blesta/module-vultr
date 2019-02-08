@@ -1223,6 +1223,11 @@ class Vultr extends Module
                             ];
                             $this->log('api.vultr.com|backup_enable', serialize($params), 'input', true);
                             $this->parseResponse($vultr_api->backupEnable($params));
+
+                            // Updated backups to be daily
+                            $params['cron_type'] = 'daily';
+                            $this->log('api.vultr.com|backup_daily', serialize($params), 'input', true);
+                            $this->parseResponse($vultr_api->backupSetSchedule($params));
                         }
                     }
                 } else {
@@ -1329,7 +1334,9 @@ class Vultr extends Module
         }
 
         // Disallow capital letters in hostname
-        $vars['vultr_hostname'] = strtolower($vars['vultr_hostname']);
+        if (isset($vars['vultr_hostname'])) {
+            $vars['vultr_hostname'] = strtolower($vars['vultr_hostname']);
+        }
 
         // Check for fields that changed
         $delta = [];
@@ -1389,15 +1396,40 @@ class Vultr extends Module
                 }
             }
 
-            // Enable automatic backup
-            if (isset($vars['configoptions']['enable_backup']) && $vars['configoptions']['enable_backup'] == 'enable') {
-                // Only virtual machines supports automatic backups
-                if ($package->meta->server_type == 'server') {
+            // Only virtual machines supports automatic backups
+            if (isset($vars['configoptions']['enable_backup']) && $package->meta->server_type == 'server') {
+                // Enable/disable automatic backups
+                $enable_backup = null;
+                foreach ($service->options as $service_option) {
+                    if ($service_option->option_name == 'enable_backup') {
+                        $enable_backup = $service_option;
+                        break;
+                    }
+                }
+
+                if ($vars['configoptions']['enable_backup'] == 'enable'
+                    && (!$enable_backup || $enable_backup->option_value != 'enable')
+                ) {
+                    // Enable daily backups
                     $params = [
                         'SUBID' => $service_fields->vultr_subid
                     ];
                     $this->log('api.vultr.com|backup_enable', serialize($params), 'input', true);
                     $this->parseResponse($vultr_api->backupEnable($params));
+
+                    // Updated backups to be daily
+                    $params['cron_type'] = 'daily';
+                    $this->log('api.vultr.com|backup_daily', serialize($params), 'input', true);
+                    $this->parseResponse($vultr_api->backupSetSchedule($params));
+                } elseif ($vars['configoptions']['enable_backup'] != 'enable'
+                    && (!$enable_backup || $enable_backup->option_value != 'disable')
+                ) {
+                    // Disable daily backups
+                    $params = [
+                        'SUBID' => $service_fields->vultr_subid
+                    ];
+                    $this->log('api.vultr.com|backup_disable', serialize($params), 'input', true);
+                    $this->parseResponse($vultr_api->backupDisable($params));
                 }
             }
 
@@ -1747,105 +1779,8 @@ class Vultr extends Module
      */
     public function tabActions($package, $service, array $get = null, array $post = null, array $files = null)
     {
-        // Get module row
-        $row = $this->getModuleRow();
-
-        // Set the current view
-        $this->view = new View('tab_actions', 'default');
-        $this->view->base_uri = $this->base_uri;
-
-        // Load the helpers required for this view
-        Loader::loadHelpers($this, ['Form', 'Html']);
-
-        // Get the service fields
-        $service_fields = $this->serviceFieldsToObject($service->fields);
-
-        // Get the available templates
-        $templates = $this->getTemplates($row, $package, $service);
-
-        // Initialize the Vultr API
-        $api = $this->getApi($row->meta->api_key);
-
-        if ($package->meta->server_type == 'server') {
-            $api->loadCommand('vultr_server');
-            $vultr_api = new VultrServer($api);
-        } else {
-            $api->loadCommand('vultr_baremetal');
-            $vultr_api = new VultrBaremetal($api);
-        }
-
-        // Perform actions
-        if (!empty($post['action'])) {
-            switch ($post['action']) {
-                case 'restart':
-                    $params = [
-                        'SUBID' => $service_fields->vultr_subid
-                    ];
-                    $vultr_api->reboot($params);
-                    break;
-                case 'stop':
-                    $params = [
-                        'SUBID' => $service_fields->vultr_subid
-                    ];
-                    $vultr_api->halt($params);
-                    break;
-                case 'start':
-                    $params = [
-                        'SUBID' => $service_fields->vultr_subid
-                    ];
-                    $vultr_api->reboot($params);
-                    break;
-                case 'reinstall':
-                    $params = [
-                        'SUBID' => $service_fields->vultr_subid,
-                        'hostname' => $service_fields->vultr_hostname
-                    ];
-                    $vultr_api->reinstall($params);
-                    break;
-                case 'change_template':
-                    if ($package->meta->set_template == 'client') {
-                        Loader::loadModels($this, ['Services']);
-
-                        $data = [
-                            'vultr_subid' => $service_fields->vultr_subid,
-                            'vultr_template' => $this->Html->ifSet($post['template'])
-                        ];
-                        $this->Services->edit($service->id, $data);
-
-                        if ($this->Services->errors()) {
-                            $vars = (object) $post;
-                            $this->Input->setErrors($this->Services->errors());
-                        }
-                    }
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        // Get the server details
-        $params = [
-            'SUBID' => $service_fields->vultr_subid
-        ];
-        $this->log('api.vultr.com|list', serialize($params), 'input', true);
-
-        if ($package->meta->server_type == 'server') {
-            $server_details = $this->parseResponse($vultr_api->listServers($params));
-        } else {
-            $server_details = $this->parseResponse($vultr_api->listBaremetal($params));
-        }
-
-        $this->view->set('module_row', $row);
-        $this->view->set('package', $package);
-        $this->view->set('service', $service);
-        $this->view->set('service_fields', $service_fields);
-        $this->view->set('templates', $templates);
-        $this->view->set('server_details', (isset($server_details) ? $server_details : new stdClass()));
-        $this->view->set('vars', (isset($vars) ? $vars : new stdClass()));
-
-        $this->view->setDefaultView('components' . DS . 'modules' . DS . 'vultr' . DS);
-
-        return $this->view->fetch();
+        // Get the actions tab
+        return $this->getTabActions($package, $service, $post);
     }
 
     /**
@@ -1926,104 +1861,8 @@ class Vultr extends Module
      */
     public function tabSnapshots($package, $service, array $get = null, array $post = null, array $files = null)
     {
-        // Get module row
-        $row = $this->getModuleRow();
-
-        // Set the current view
-        $this->view = new View('tab_snapshots', 'default');
-        $this->view->base_uri = $this->base_uri;
-
-        // Load the helpers required for this view
-        Loader::loadHelpers($this, ['Form', 'Html']);
-
-        // Get the service fields
-        $service_fields = $this->serviceFieldsToObject($service->fields);
-
-        // Initialize the Vultr API
-        $api = $this->getApi($row->meta->api_key);
-        $api->loadCommand('vultr_server');
-        $api->loadCommand('vultr_snapshot');
-
-        $server_api = new VultrServer($api);
-        $snapshot_api = new VultrSnapshot($api);
-
-        // Perform actions
-        if (!empty($post)) {
-            switch ($post['action']) {
-                case 'create':
-                    $params = [
-                        'SUBID' => $service_fields->vultr_subid,
-                        'description' => $this->Html->safe($post['description'])
-                    ];
-                    $result = $this->parseResponse($snapshot_api->create($params));
-
-                    if (isset($result->SNAPSHOTID)) {
-                        Loader::loadModels($this, ['Services']);
-
-                        $service_fields->vultr_snapshots = $service_fields->vultr_snapshots + [
-                            $result->SNAPSHOTID => $this->Html->safe($post['description'])
-                        ];
-
-                        $data = [
-                            'vultr_snapshots' => $service_fields->vultr_snapshots
-                        ];
-                        $this->Services->edit($service->id, $data);
-
-                        if ($this->Services->errors()) {
-                            $this->Input->setErrors($this->Services->errors());
-                        }
-                    }
-
-                    $vars = (object) $post;
-                    break;
-                case 'remove':
-                    $params = [
-                        'SNAPSHOTID' => $this->Html->safe($post['snapshotid'])
-                    ];
-                    $snapshot_api->destroy($params);
-
-                    Loader::loadModels($this, ['Services']);
-
-                    unset($service_fields->vultr_snapshots[$post['snapshotid']]);
-
-                    $data = [
-                        'vultr_snapshots' => $service_fields->vultr_snapshots
-                    ];
-                    $this->Services->edit($service->id, $data);
-
-                    if ($this->Services->errors()) {
-                        $this->Input->setErrors($this->Services->errors());
-                    }
-
-                    $vars = (object) $post;
-                    break;
-                case 'restore':
-                    $params = [
-                        'SUBID' => $service_fields->vultr_subid,
-                        'SNAPSHOTID' => $this->Html->safe($post['snapshotid'])
-                    ];
-                    $server_api->restoreSnapshot($params);
-
-                    $vars = (object) $post;
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        // Get server snapshots
-        $snapshots = $service_fields->vultr_snapshots;
-
-        $this->view->set('module_row', $row);
-        $this->view->set('package', $package);
-        $this->view->set('service', $service);
-        $this->view->set('service_fields', $service_fields);
-        $this->view->set('snapshots', (isset($snapshots) ? $snapshots : []));
-        $this->view->set('vars', (isset($vars) ? $vars : new stdClass()));
-
-        $this->view->setDefaultView('components' . DS . 'modules' . DS . 'vultr' . DS);
-
-        return $this->view->fetch();
+        // Get snapshots tab
+        return $this->getTabSnapshots($package, $service, $post);
     }
 
     /**
@@ -2115,105 +1954,8 @@ class Vultr extends Module
      */
     public function tabClientActions($package, $service, array $get = null, array $post = null, array $files = null)
     {
-        // Get module row
-        $row = $this->getModuleRow();
-
-        // Set the current view
-        $this->view = new View('tab_client_actions', 'default');
-        $this->view->base_uri = $this->base_uri;
-
-        // Load the helpers required for this view
-        Loader::loadHelpers($this, ['Form', 'Html']);
-
-        // Get the service fields
-        $service_fields = $this->serviceFieldsToObject($service->fields);
-
-        // Get the available templates
-        $templates = $this->getTemplates($row, $package, $service);
-
-        // Initialize the Vultr API
-        $api = $this->getApi($row->meta->api_key);
-
-        if ($package->meta->server_type == 'server') {
-            $api->loadCommand('vultr_server');
-            $vultr_api = new VultrServer($api);
-        } else {
-            $api->loadCommand('vultr_baremetal');
-            $vultr_api = new VultrBaremetal($api);
-        }
-
-        // Perform actions
-        if (!empty($post['action'])) {
-            switch ($post['action']) {
-                case 'restart':
-                    $params = [
-                        'SUBID' => $service_fields->vultr_subid
-                    ];
-                    $vultr_api->reboot($params);
-                    break;
-                case 'stop':
-                    $params = [
-                        'SUBID' => $service_fields->vultr_subid
-                    ];
-                    $vultr_api->halt($params);
-                    break;
-                case 'start':
-                    $params = [
-                        'SUBID' => $service_fields->vultr_subid
-                    ];
-                    $vultr_api->reboot($params);
-                    break;
-                case 'reinstall':
-                    $params = [
-                        'SUBID' => $service_fields->vultr_subid,
-                        'hostname' => $service_fields->vultr_hostname
-                    ];
-                    $vultr_api->reinstall($params);
-                    break;
-                case 'change_template':
-                    if ($package->meta->set_template == 'client') {
-                        Loader::loadModels($this, ['Services']);
-
-                        $data = [
-                            'vultr_subid' => $service_fields->vultr_subid,
-                            'vultr_template' => $this->Html->ifSet($post['template'])
-                        ];
-                        $this->Services->edit($service->id, $data);
-
-                        if ($this->Services->errors()) {
-                            $vars = (object) $post;
-                            $this->Input->setErrors($this->Services->errors());
-                        }
-                    }
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        // Get the server details
-        $params = [
-            'SUBID' => $service_fields->vultr_subid
-        ];
-        $this->log('api.vultr.com|list', serialize($params), 'input', true);
-
-        if ($package->meta->server_type == 'server') {
-            $server_details = $this->parseResponse($vultr_api->listServers($params));
-        } else {
-            $server_details = $this->parseResponse($vultr_api->listBaremetal($params));
-        }
-
-        $this->view->set('module_row', $row);
-        $this->view->set('package', $package);
-        $this->view->set('service', $service);
-        $this->view->set('service_fields', $service_fields);
-        $this->view->set('templates', $templates);
-        $this->view->set('server_details', (isset($server_details) ? $server_details : new stdClass()));
-        $this->view->set('vars', (isset($vars) ? $vars : new stdClass()));
-
-        $this->view->setDefaultView('components' . DS . 'modules' . DS . 'vultr' . DS);
-
-        return $this->view->fetch();
+        // Get the actions tab
+        return $this->getTabActions($package, $service, $post, true);
     }
 
     /**
@@ -2294,104 +2036,8 @@ class Vultr extends Module
      */
     public function tabClientSnapshots($package, $service, array $get = null, array $post = null, array $files = null)
     {
-        // Get module row
-        $row = $this->getModuleRow();
-
-        // Set the current view
-        $this->view = new View('tab_client_snapshots', 'default');
-        $this->view->base_uri = $this->base_uri;
-
-        // Load the helpers required for this view
-        Loader::loadHelpers($this, ['Form', 'Html']);
-
-        // Get the service fields
-        $service_fields = $this->serviceFieldsToObject($service->fields);
-
-        // Initialize the Vultr API
-        $api = $this->getApi($row->meta->api_key);
-        $api->loadCommand('vultr_server');
-        $api->loadCommand('vultr_snapshot');
-
-        $server_api = new VultrServer($api);
-        $snapshot_api = new VultrSnapshot($api);
-
-        // Perform actions
-        if (!empty($post)) {
-            switch ($post['action']) {
-                case 'create':
-                    $params = [
-                        'SUBID' => $service_fields->vultr_subid,
-                        'description' => $this->Html->safe($post['description'])
-                    ];
-                    $result = $this->parseResponse($snapshot_api->create($params));
-
-                    if (isset($result->SNAPSHOTID)) {
-                        Loader::loadModels($this, ['Services']);
-
-                        $service_fields->vultr_snapshots = $service_fields->vultr_snapshots + [
-                            $result->SNAPSHOTID => $this->Html->safe($post['description'])
-                        ];
-
-                        $data = [
-                            'vultr_snapshots' => $service_fields->vultr_snapshots
-                        ];
-                        $this->Services->edit($service->id, $data);
-
-                        if ($this->Services->errors()) {
-                            $this->Input->setErrors($this->Services->errors());
-                        }
-                    }
-
-                    $vars = (object) $post;
-                    break;
-                case 'remove':
-                    $params = [
-                        'SNAPSHOTID' => $this->Html->safe($post['snapshotid'])
-                    ];
-                    $snapshot_api->destroy($params);
-
-                    Loader::loadModels($this, ['Services']);
-
-                    unset($service_fields->vultr_snapshots[$post['snapshotid']]);
-
-                    $data = [
-                        'vultr_snapshots' => $service_fields->vultr_snapshots
-                    ];
-                    $this->Services->edit($service->id, $data);
-
-                    if ($this->Services->errors()) {
-                        $this->Input->setErrors($this->Services->errors());
-                    }
-
-                    $vars = (object) $post;
-                    break;
-                case 'restore':
-                    $params = [
-                        'SUBID' => $service_fields->vultr_subid,
-                        'SNAPSHOTID' => $this->Html->safe($post['snapshotid'])
-                    ];
-                    $server_api->restoreSnapshot($params);
-
-                    $vars = (object) $post;
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        // Get server snapshots
-        $snapshots = $service_fields->vultr_snapshots;
-
-        $this->view->set('module_row', $row);
-        $this->view->set('package', $package);
-        $this->view->set('service', $service);
-        $this->view->set('service_fields', $service_fields);
-        $this->view->set('snapshots', (isset($snapshots) ? $snapshots : []));
-        $this->view->set('vars', (isset($vars) ? $vars : new stdClass()));
-
-        $this->view->setDefaultView('components' . DS . 'modules' . DS . 'vultr' . DS);
-
-        return $this->view->fetch();
+        // Get snapshots tab
+        return $this->getTabSnapshots($package, $service, $post, true);
     }
 
     /**
@@ -2464,6 +2110,251 @@ class Vultr extends Module
         $this->view->set('service_fields', $service_fields);
         $this->view->set('service_options', $service_options);
         $this->view->set('backups', $backups);
+        $this->view->set('vars', (isset($vars) ? $vars : new stdClass()));
+
+        $this->view->setDefaultView('components' . DS . 'modules' . DS . 'vultr' . DS);
+
+        return $this->view->fetch();
+    }
+
+    /**
+     * Actions (Admin or Client) tab.
+     *
+     * @param stdClass $package A stdClass object representing the current package
+     * @param stdClass $service A stdClass object representing the current service
+     * @param array $post Any POST parameters
+     * @param bool $client Whether to use the client view template
+     * @return string The string representing the contents of this tab
+     */
+    private function getTabActions($package, $service, array $post = null, $client = false)
+    {
+        // Get module row
+        $row = $this->getModuleRow();
+
+        // Set the current view
+        $this->view = new View($client ? 'tab_client_actions' : 'tab_actions', 'default');
+        $this->view->base_uri = $this->base_uri;
+
+        // Load the helpers required for this view
+        Loader::loadHelpers($this, ['Form', 'Html']);
+
+        // Get the service fields
+        $service_fields = $this->serviceFieldsToObject($service->fields);
+
+        // Get the available templates
+        $templates = $this->getTemplates($row, $package, $service);
+
+        // Initialize the Vultr API
+        $api = $this->getApi($row->meta->api_key);
+
+        if ($package->meta->server_type == 'server') {
+            $api->loadCommand('vultr_server');
+            $vultr_api = new VultrServer($api);
+        } else {
+            $api->loadCommand('vultr_baremetal');
+            $vultr_api = new VultrBaremetal($api);
+        }
+
+        if ($package->meta->server_type == 'server') {
+            $server_details = $this->parseResponse($vultr_api->listServers(['SUBID' => $service_fields->vultr_subid]));
+        } else {
+            $server_details = $this->parseResponse(
+                $vultr_api->listBaremetal(['SUBID' => $service_fields->vultr_subid])
+            );
+        }
+
+        // Set a warning about an in progress snapshot
+        $server_locked = isset($server_details->server_state) && $server_details->server_state == 'locked';
+        if ($server_locked) {
+            $this->setMessage('notice', Language::_('Vultr.tab_actions.server_locked', true));
+        }
+
+        // Perform actions
+        if (!empty($post['action'])) {
+            if ($server_locked) {
+                // Return error saying that the server is locked
+                $this->Input->setErrors(['api' => ['error' => Language::_('Vultr.!error.api.server_locked', true)]]);
+            } else {
+                switch ($post['action']) {
+                    case 'restart':
+                        $params = [
+                            'SUBID' => $service_fields->vultr_subid
+                        ];
+                        $vultr_api->reboot($params);
+                        break;
+                    case 'stop':
+                        $params = [
+                            'SUBID' => $service_fields->vultr_subid
+                        ];
+                        $vultr_api->halt($params);
+                        break;
+                    case 'start':
+                        $params = [
+                            'SUBID' => $service_fields->vultr_subid
+                        ];
+                        $vultr_api->reboot($params);
+                        break;
+                    case 'reinstall':
+                        $params = [
+                            'SUBID' => $service_fields->vultr_subid,
+                            'hostname' => $service_fields->vultr_hostname
+                        ];
+                        $vultr_api->reinstall($params);
+                        break;
+                    case 'change_template':
+                        if ($package->meta->set_template == 'client') {
+                            Loader::loadModels($this, ['Services']);
+
+                            $data = [
+                                'vultr_subid' => $service_fields->vultr_subid,
+                                'vultr_template' => $this->Html->ifSet($post['template'])
+                            ];
+                            $this->Services->edit($service->id, $data);
+
+                            if ($this->Services->errors()) {
+                                $vars = (object) $post;
+                                $this->Input->setErrors($this->Services->errors());
+                            }
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+
+        // Get the server details
+        $params = [
+            'SUBID' => $service_fields->vultr_subid
+        ];
+        $this->log('api.vultr.com|list', serialize($params), 'input', true);
+
+        if ($package->meta->server_type == 'server') {
+            $server_details = $this->parseResponse($vultr_api->listServers($params));
+        } else {
+            $server_details = $this->parseResponse($vultr_api->listBaremetal($params));
+        }
+
+        $this->view->set('module_row', $row);
+        $this->view->set('package', $package);
+        $this->view->set('service', $service);
+        $this->view->set('service_fields', $service_fields);
+        $this->view->set('templates', $templates);
+        $this->view->set('server_details', (isset($server_details) ? $server_details : new stdClass()));
+        $this->view->set('vars', (isset($vars) ? $vars : new stdClass()));
+
+        $this->view->setDefaultView('components' . DS . 'modules' . DS . 'vultr' . DS);
+
+        return $this->view->fetch();
+    }
+
+    /**
+     * Snapshots (Admin or Client) tab.
+     *
+     * @param stdClass $package A stdClass object representing the current package
+     * @param stdClass $service A stdClass object representing the current service
+     * @param array $post Any POST parameters
+     * @param bool $client Whether to use the client view template
+     * @return string The string representing the contents of this tab
+     */
+    private function getTabSnapshots($package, $service, array $post = null, $client = false)
+    {
+        // Get module row
+        $row = $this->getModuleRow();
+
+        // Set the current view
+        $this->view = new View($client ? 'tab_client_snapshots' : 'tab_snapshots', 'default');
+        $this->view->base_uri = $this->base_uri;
+
+        // Load the helpers required for this view
+        Loader::loadHelpers($this, ['Form', 'Html']);
+
+        // Get the service fields
+        $service_fields = $this->serviceFieldsToObject($service->fields);
+
+        // Initialize the Vultr API
+        $api = $this->getApi($row->meta->api_key);
+        $api->loadCommand('vultr_server');
+        $api->loadCommand('vultr_snapshot');
+
+        $server_api = new VultrServer($api);
+        $snapshot_api = new VultrSnapshot($api);
+
+        // Perform actions
+        if (!empty($post)) {
+            switch ($post['action']) {
+                case 'create':
+                    $params = [
+                        'SUBID' => $service_fields->vultr_subid,
+                        'description' => $this->Html->safe($post['description'])
+                    ];
+                    $result = $this->parseResponse($snapshot_api->create($params));
+
+                    if (isset($result->SNAPSHOTID)) {
+                        Loader::loadModels($this, ['Services']);
+                        $service_fields->vultr_snapshots = $service_fields->vultr_snapshots + [
+                            $result->SNAPSHOTID => $this->Html->safe($post['description'])
+                        ];
+                        $data = [
+                            'vultr_snapshots' => $service_fields->vultr_snapshots
+                        ];
+                        $this->Services->edit($service->id, $data);
+                        if ($this->Services->errors()) {
+                            $this->Input->setErrors($this->Services->errors());
+                        }
+                    }
+
+                    $vars = (object) $post;
+                    break;
+                case 'remove':
+                    $params = [
+                        'SNAPSHOTID' => $this->Html->safe($post['snapshotid'])
+                    ];
+                    $this->parseResponse($snapshot_api->destroy($params));
+
+                    unset($service_fields->vultr_snapshots[$post['snapshotid']]);
+
+                    $data = [
+                        'vultr_snapshots' => $service_fields->vultr_snapshots
+                    ];
+
+                    $this->Services->edit($service->id, $data);
+                    if ($this->Services->errors()) {
+                        $this->Input->setErrors($this->Services->errors());
+                    }
+
+                    $vars = (object) $post;
+                    break;
+                case 'restore':
+                    $params = [
+                        'SUBID' => $service_fields->vultr_subid,
+                        'SNAPSHOTID' => $this->Html->safe($post['snapshotid'])
+                    ];
+                    $server_api->restoreSnapshot($params);
+
+                    $vars = (object) $post;
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        // Get server snapshots
+        $snapshots = $service_fields->vultr_snapshots;
+        $vultr_snapshots = $this->parseResponse($snapshot_api->listSnapshots());
+        foreach ($snapshots as $id => $description) {
+            if (isset($vultr_snapshots->{$id})) {
+                $snapshots[$id] = $vultr_snapshots->{$id};
+            } else {
+                unset($snapshots[$id]);
+            }
+        }
+
+        $this->view->set('module_row', $row);
+        $this->view->set('package', $package);
+        $this->view->set('service', $service);
+        $this->view->set('service_fields', $service_fields);
+        $this->view->set('snapshots', (isset($snapshots) ? $snapshots : []));
         $this->view->set('vars', (isset($vars) ? $vars : new stdClass()));
 
         $this->view->setDefaultView('components' . DS . 'modules' . DS . 'vultr' . DS);
