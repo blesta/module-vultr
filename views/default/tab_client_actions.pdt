@@ -10,9 +10,11 @@
     }
     ?>
 
-    <span class="label label-<?php $this->Html->_($status_class); ?>">
-        <i class="fa fa-lightbulb-o"></i> <?php $this->_('Vultr.tab_client_actions.status_' . $this->Html->_($status, true)); ?>
-    </span>
+    <div id="vultr_status_badge">
+        <span class="label label-<?php $this->Html->_($status_class); ?>">
+            <i class="fa fa-lightbulb-o"></i> <?php $this->_('Vultr.tab_client_actions.status_' . $this->Html->_($status, true)); ?>
+        </span>
+    </div>
 
     <h4><?php $this->_('Vultr.tab_client_actions.heading_actions'); ?></h4>
     <div class="row options" id="vultr_actions">
@@ -138,8 +140,12 @@
                         // Success response
                         function(data) {
                             if (data.replacer && data.content) {
+                                var badge_html = $('div', data.content).filter('#vultr_status_badge').html();
+                                $('#vultr_status_badge').html(badge_html);
+
                                 var html = $('div', data.content).filter('#vultr_actions').html();
                                 $('#vultr_actions').html(html);
+
                                 refresh_rate = (html == old_action_data) ? '<?php echo Configure::get('Vultr.page_refresh_rate');?>' : '<?php echo Configure::get('Vultr.page_refresh_rate_fast');?>';
 
                                 clearInterval(interval);

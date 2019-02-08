@@ -2,7 +2,7 @@
     <div class="title_row first">
         <h3><?php $this->_('Vultr.tab_actions.status_title'); ?></h3>
     </div>
-    <div class="pad">
+    <div class="pad" id="vultr_status_badge">
         <?php
         if ($this->Html->ifSet($server_details->power_status) == 'running') {
             $status_class = 'success';
@@ -156,8 +156,12 @@
                         // Success response
                         function(data) {
                             if (data.replacer && data.content) {
+                                var badge_html = $('div', data.content).filter('#vultr_status_badge').html();
+                                $('#vultr_status_badge').html(badge_html);
+
                                 var html = $('div', data.content).filter('#vultr_actions').html();
                                 $('#vultr_actions').html(html);
+
                                 refresh_rate = (html == old_action_data) ? '<?php echo Configure::get('Vultr.page_refresh_rate');?>' : '<?php echo Configure::get('Vultr.page_refresh_rate_fast');?>';
 
                                 clearInterval(interval);
