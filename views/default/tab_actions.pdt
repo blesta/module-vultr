@@ -2,21 +2,21 @@
     <div class="title_row first">
         <h3><?php $this->_('Vultr.tab_actions.status_title'); ?></h3>
     </div>
-    <div class="pad" id="vultr_status_badge">
-        <?php
-        if ($this->Html->ifSet($server_details->server_state) == 'locked') {
-            $status_class = 'warning';
-            $status = 'locked';
-        } elseif ($this->Html->ifSet($server_details->power_status) == 'running' || $this->Html->ifSet($server_details->status) == 'active') {
-            $status_class = 'success';
-            $status = 'online';
-        } else {
-            $status_class = 'danger';
-            $status = 'offline';
-        }
-        ?>
 
-        <span class="btn btn-sm btn-<?php $this->Html->_($status_class); ?>" style="padding: 2px 4px;" disabled="disabled">
+    <?php
+    if ($this->Html->ifSet($server_details->server_state) == 'locked') {
+        $status_class = 'warning';
+        $status = 'locked';
+    } elseif ($this->Html->ifSet($server_details->power_status) == 'running' || $this->Html->ifSet($server_details->status) == 'active') {
+        $status_class = 'success';
+        $status = 'online';
+    } else {
+        $status_class = 'danger';
+        $status = 'offline';
+    }
+    ?>
+    <div class="pad" id="vultr_status_badge">
+        <span class="label label-<?php $this->Html->_($status_class); ?>">
             <i class="fa fa-lightbulb-o"></i> <?php $this->_('Vultr.tab_client_actions.status_' . $this->Html->_($status, true)); ?>
         </span>
     </div>
