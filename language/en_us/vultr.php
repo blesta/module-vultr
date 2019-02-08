@@ -61,6 +61,7 @@ $lang['Vultr.service_field.enable_ipv6'] = 'Enable IPv6';
 $lang['Vultr.service_field.disable_ipv6'] = 'Disable IPv6';
 
 // Service management
+$lang['Vultr.tab_actions.server_locked'] = 'A snapshot is currently being restored. This process can take up to 60 minutes to complete. Most server actions will be unavailable until this has completed.';
 $lang['Vultr.tab_actions.status_title'] = 'Server Status';
 $lang['Vultr.tab_actions.server_title'] = 'Server Actions';
 $lang['Vultr.tab_actions.action_restart'] = 'Restart';
@@ -93,6 +94,7 @@ $lang['Vultr.tab_stats.app_information'] = 'Application Information';
 $lang['Vultr.tab_snapshots.snapshots'] = 'Snapshots';
 $lang['Vultr.tab_snapshots.heading_row_snapshot_id'] = 'Snapshot ID';
 $lang['Vultr.tab_snapshots.heading_row_description'] = 'Description';
+$lang['Vultr.tab_snapshots.heading_row_status'] = 'Status';
 $lang['Vultr.tab_snapshots.heading_row_options'] = 'Options';
 $lang['Vultr.tab_snapshots.restore_snapshot'] = 'Restore Snapshot';
 $lang['Vultr.tab_snapshots.remove_snapshot'] = 'Remove Snapshot';
@@ -114,6 +116,7 @@ $lang['Vultr.tab_backups.backups_disabled'] = 'This server does not have automat
 $lang['Vultr.tab_client_actions.heading_status'] = 'Server Status';
 $lang['Vultr.tab_client_actions.status_online'] = 'Online';
 $lang['Vultr.tab_client_actions.status_offline'] = 'Offline';
+$lang['Vultr.tab_client_actions.status_locked'] = 'Locked';
 
 $lang['Vultr.tab_client_actions.heading_actions'] = 'Actions';
 $lang['Vultr.tab_client_actions.action_restart'] = 'Restart';
@@ -150,6 +153,7 @@ $lang['Vultr.tab_client_stats.app_information'] = 'Application Information';
 $lang['Vultr.tab_client_snapshots.snapshots'] = 'Snapshots';
 $lang['Vultr.tab_client_snapshots.snapshot_id'] = 'Snapshot ID';
 $lang['Vultr.tab_client_snapshots.description'] = 'Description';
+$lang['Vultr.tab_client_snapshots.status'] = 'Status';
 $lang['Vultr.tab_client_snapshots.options'] = 'Options';
 $lang['Vultr.tab_client_snapshots.heading_restore_snapshot'] = 'Restore Snapshot %1$s'; // %1$s is the snapshot id
 $lang['Vultr.tab_client_snapshots.heading_remove_snapshot'] = 'Remove Snapshot %1$s'; // %1$s is the snapshot id
@@ -197,6 +201,7 @@ $lang['Vultr.!error.meta[baremetal_plan].format'] = 'Please select a valid Bare 
 $lang['Vultr.!error.meta[server_plan].format'] = 'Please select a valid Server Plan.';
 
 $lang['Vultr.!error.api.internal'] = 'An internal error occurred, or the server did not respond to the request.';
+$lang['Vultr.!error.api.server_locked'] = 'Unable to complete action.  Server is currently locked.';
 $lang['Vultr.!error.module_row.missing'] = 'An internal error occurred. The module row is unavailable.';
 
 $lang['Vultr.!error.vultr_hostname.format'] = 'Please enter a valid hostname, e.g. domain.com.';
