@@ -1393,20 +1393,21 @@ class Vultr extends Module
                 }
             }
 
-            // Enable automatic backup
-            $enable_backup = null;
-            foreach ($service->options as $service_option) {
-                if ($service_option->option_name == 'enable_backup') {
-                    $enable_backup = $service_option;
-                    break;
+            // Only virtual machines supports automatic backups
+            if (isset($vars['configoptions']['enable_backup']) && $package->meta->server_type == 'server') {
+                // Enable/disable automatic backups
+                $enable_backup = null;
+                foreach ($service->options as $service_option) {
+                    if ($service_option->option_name == 'enable_backup') {
+                        $enable_backup = $service_option;
+                        break;
+                    }
                 }
-            }
-            if (isset($vars['configoptions']['enable_backup'])
-                && $vars['configoptions']['enable_backup'] == 'enable'
-                && (!$enable_backup || $enable_backup->option_value != 'enable')
-            ) {
-                // Only virtual machines supports automatic backups
-                if ($package->meta->server_type == 'server') {
+
+                if ($vars['configoptions']['enable_backup'] == 'enable'
+                    && (!$enable_backup || $enable_backup->option_value != 'enable')
+                ) {
+                    // Enable daily backups
                     $params = [
                         'SUBID' => $service_fields->vultr_subid
                     ];
@@ -1417,6 +1418,15 @@ class Vultr extends Module
                     $params['cron_type'] = 'daily';
                     $this->log('api.vultr.com|backup_daily', serialize($params), 'input', true);
                     $this->parseResponse($vultr_api->backupSetSchedule($params));
+                } elseif ($vars['configoptions']['enable_backup'] != 'enable'
+                    && (!$enable_backup || $enable_backup->option_value != 'disable')
+                ) {
+                    // Disable daily backups
+                    $params = [
+                        'SUBID' => $service_fields->vultr_subid
+                    ];
+                    $this->log('api.vultr.com|backup_disable', serialize($params), 'input', true);
+                    $this->parseResponse($vultr_api->backupDisable($params));
                 }
             }
 
