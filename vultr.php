@@ -901,10 +901,10 @@ class Vultr extends Module
         Loader::loadHelpers($this, ['Html']);
 
         // Get the available templates
-        $templates = $this->getTemplates($this->module_row, $package);
+        $templates = $this->getTemplates($this->getModuleRow($package->module_row), $package);
 
         // Get the available locations
-        $locations = $this->getLocations($this->module_row, $package);
+        $locations = $this->getLocations($this->getModuleRow($package->module_row), $package);
 
         $fields = new ModuleFields();
 
