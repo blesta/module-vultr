@@ -4,7 +4,7 @@
     if ($this->Html->ifSet($server_details->server_state) == 'locked') {
         $status_class = 'warning';
         $status = 'locked';
-    } elseif ($this->Html->ifSet($server_details->power_status) == 'running' || $this->Html->ifSet($server_details->status) == 'active') {
+    } elseif ($this->Html->ifSet($server_details->power_status) == 'running' && $this->Html->ifSet($server_details->status) == 'active') {
         $status_class = 'success';
         $status = 'online';
     } else {
