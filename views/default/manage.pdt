@@ -13,7 +13,7 @@
             <h3><?php $this->_('Vultr.manage.module_rows_title'); ?></h3>
         </div>
         <?php
-        $num_rows = count($this->Html->ifSet($module->rows));
+        $num_rows = count($this->Html->ifSet($module->rows, []));
         if ($num_rows > 0) {
         ?>
         <table class="table">
