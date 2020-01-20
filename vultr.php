@@ -2221,6 +2221,13 @@ class Vultr extends Module
                             }
                         }
                         break;
+                    case 'enable_ipv6':
+                        $params = [
+                            'SUBID' => $service_fields->vultr_subid
+                        ];
+                        $this->log('api.vultr.com|ipv6Enable', serialize($params), 'input', true);
+                        $this->parseResponse($vultr_api->ipv6Enable($params));
+                        break;
                     default:
                         break;
                 }
@@ -2239,12 +2246,29 @@ class Vultr extends Module
             $server_details = $this->parseResponse($vultr_api->listBaremetal($params));
         }
 
+        // Get the server ipv6
+        $ip_list = null;
+        if ($service_fields->vultr_enable_ipv6 == 'enable') {
+            $errors = $this->Input->errors();
+            $this->log('api.vultr.com|listIpv6', serialize($params), 'input', true);
+            $ip_list = $this->parseResponse($vultr_api->listIpv6($params));
+
+            if ($errors != $this->Input->errors()) {
+                $this->Input->setErrors($errors ? $errors : []);
+            }
+        }
+
         $this->view->set('module_row', $row);
         $this->view->set('package', $package);
         $this->view->set('service', $service);
         $this->view->set('service_fields', $service_fields);
         $this->view->set('templates', $templates);
         $this->view->set('server_details', (isset($server_details) ? $server_details : new stdClass()));
+        $this->view->set(
+            'ipv6_enablable',
+            $service_fields->vultr_enable_ipv6
+            && (!isset($ip_list->{$service_fields->vultr_subid}) || empty($ip_list->{$service_fields->vultr_subid}))
+        );
         $this->view->set('vars', (isset($vars) ? $vars : new stdClass()));
 
         $this->view->setDefaultView('components' . DS . 'modules' . DS . 'vultr' . DS);
