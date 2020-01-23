@@ -4,6 +4,7 @@
  */
 // Basics
 $lang['Vultr.name'] = 'Vultr';
+$lang['Vultr.description'] = 'The Vultr control panel makes server management simple and intuitive. Common tasks such as a ordering servers, managing backups, and adjusting access control are only a few clicks away.';
 $lang['Vultr.module_row'] = 'Account';
 $lang['Vultr.module_row_plural'] = 'Accounts';
 $lang['Vultr.tab_actions'] = 'Actions';

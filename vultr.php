@@ -504,29 +504,6 @@ class Vultr extends Module
     }
 
     /**
-     * Returns an array of key values for fields stored for a module, package,
-     * and service under this module, used to substitute those keys with their
-     * actual module, package, or service meta values in related emails.
-     *
-     * @return array A multi-dimensional array of key/value pairs where each key is
-     *  one of 'module', 'package', or 'service' and each value is a numerically
-     *  indexed array of key values that match meta fields under that category.
-     * @see Modules::addModuleRow()
-     * @see Modules::editModuleRow()
-     * @see Modules::addPackage()
-     * @see Modules::editPackage()
-     * @see Modules::addService()
-     * @see Modules::editService()
-     */
-    public function getEmailTags()
-    {
-        return [
-            'package' => ['server_type'],
-            'service' => ['vultr_hostname', 'vultr_location']
-        ];
-    }
-
-    /**
      * Validates input data when attempting to add a package, returns the meta
      * data to save when adding a package. Performs any action required to add
      * the package on the remote server. Sets Input errors on failure,
@@ -742,42 +719,6 @@ class Vultr extends Module
 
             return $meta;
         }
-    }
-
-    /**
-     * Returns the value used to identify a particular service.
-     *
-     * @param stdClass $service A stdClass object representing the service
-     * @return string A value used to identify this service amongst other similar services
-     */
-    public function getServiceName($service)
-    {
-        foreach ($service->fields as $field) {
-            if ($field->key == 'vultr_hostname') {
-                return $field->value;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Returns the value used to identify a particular package service which has
-     * not yet been made into a service. This may be used to uniquely identify
-     * an uncreated services of the same package (i.e. in an order form checkout).
-     *
-     * @param stdClass $package A stdClass object representing the selected package
-     * @param array $vars An array of user supplied info to satisfy the request
-     * @return string The value used to identify this package service
-     * @see Module::getServiceName()
-     */
-    public function getPackageServiceName($package, array $vars = null)
-    {
-        if (isset($vars['vultr_hostname'])) {
-            return $vars['vultr_hostname'];
-        }
-
-        return null;
     }
 
     /**
