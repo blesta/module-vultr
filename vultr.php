@@ -2246,14 +2246,18 @@ class Vultr extends Module
             $server_details = $this->parseResponse($vultr_api->listBaremetal($params));
         }
 
-        // Get the server ipv6
+        // Get a list of ipv6 addresses currently assigned to the server
         $ip_list = null;
         if ($service_fields->vultr_enable_ipv6 == 'enable') {
+            // Save the current list of errors
             $errors = $this->Input->errors();
             $this->log('api.vultr.com|listIpv6', serialize($params), 'input', true);
             $ip_list = $this->parseResponse($vultr_api->listIpv6($params));
 
+            // Ignore any errors set by this call, it probably just means there are no ipv6 addresses currently
+            // assigned to the server, which is fine
             if ($errors != $this->Input->errors()) {
+                // Reset errors to what they were before the ipv6 call
                 $this->Input->setErrors($errors ? $errors : []);
             }
         }
