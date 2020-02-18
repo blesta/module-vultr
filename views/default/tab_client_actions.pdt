@@ -48,7 +48,7 @@
             $this->Form->create();
             $this->Form->fieldHidden('action', 'enable_ipv6');
             ?>
-            <button<?php echo $this->Html->ifSet($status) != 'online' || !$ipv6_enablable ? ' disabled="disabled"' : ''; ?> class="btn btn-default btn-block" style="margin-top: 10px;">
+            <button<?php echo $this->Html->ifSet($status) != 'online' || !$this->Html->ifSet($ipv6_enablable) ? ' disabled="disabled"' : ''; ?> class="btn btn-default btn-block" style="margin-top: 10px;">
                 <i class="fa fa-server"></i> <?php $this->_('Vultr.tab_actions.action_enable_ipv6'); ?>
             </button>
             <?php
