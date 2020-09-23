@@ -27,7 +27,7 @@
                     <td><?php echo ucwords($this->Html->safe($snapshot->status)); ?></td>
                     <td>
                         <a class="btn btn-xs btn-success restore-snapshot" href="#" data-id="<?php $this->Html->_($snapshot->SNAPSHOTID); ?>" data-toggle="modal" data-target="#restore-snapshot<?php $this->Html->_($snapshot->SNAPSHOTID); ?>">
-                            <i class="fa fa-check"></i>
+                            <i class="fas fa-check"></i>
                             <?php $this->_('Vultr.tab_client_snapshots.restore_snapshot'); ?>
                         </a>
                         <div id="restore-snapshot<?php $this->Html->_($snapshot->SNAPSHOTID); ?>" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
@@ -49,7 +49,7 @@
                         </div>
 
                         <a class="btn btn-xs btn-danger remove-snapshot" href="#" data-id="<?php $this->Html->_($snapshot->SNAPSHOTID); ?>" data-toggle="modal" data-target="#remove-snapshot<?php $this->Html->_($snapshot->SNAPSHOTID); ?>">
-                            <i class="fa fa-ban fa-fw"></i>
+                            <i class="fas fa-ban fa-fw"></i>
                             <?php $this->_('Vultr.tab_client_snapshots.remove_snapshot'); ?>
                         </a>
                         <div id="remove-snapshot<?php $this->Html->_($snapshot->SNAPSHOTID); ?>" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
@@ -116,7 +116,7 @@
             </div>
 
             <button class="btn btn-default pull-right">
-                <i class="fa fa-plus"></i> <?php $this->_('Vultr.tab_client_snapshots.field_create_submit');?>
+                <i class="fas fa-plus"></i> <?php $this->_('Vultr.tab_client_snapshots.field_create_submit');?>
             </button>
         </div>
         <?php

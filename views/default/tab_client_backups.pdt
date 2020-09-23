@@ -28,7 +28,7 @@
                     <td><?php $this->Html->_($backup->description); ?></td>
                     <td>
                         <a class="btn btn-xs btn-success restore-backup" href="#" data-id="<?php $this->Html->_($backupid); ?>" data-toggle="modal" data-target="#restore-backup<?php echo $backupid; ?>">
-                            <i class="fa fa-check"></i>
+                            <i class="fas fa-check"></i>
                             <?php $this->_('Vultr.tab_client_backups.restore_backup'); ?>
                         </a>
                         <div id="restore-backup<?php echo $backupid; ?>" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">

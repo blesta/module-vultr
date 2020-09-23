@@ -15,7 +15,7 @@
 
     <div id="vultr_status_badge">
         <span class="label label-<?php $this->Html->_($status_class); ?>">
-            <i class="fa fa-lightbulb-o"></i> <?php $this->_('Vultr.tab_client_actions.status_' . $this->Html->_($status, true)); ?>
+            <i class="fas fa-lightbulb"></i> <?php $this->_('Vultr.tab_client_actions.status_' . $this->Html->_($status, true)); ?>
         </span>
     </div>
 
@@ -27,7 +27,7 @@
             $this->Form->fieldHidden('action', 'restart');
             ?>
             <button<?php echo $this->Html->ifSet($status) != 'online' ? ' disabled="disabled"' : ''; ?> class="btn btn-default btn-block btn-success">
-                <i class="fa fa-refresh"></i> <?php $this->_('Vultr.tab_client_actions.action_restart'); ?>
+                <i class="fas fa-sync-alt"></i> <?php $this->_('Vultr.tab_client_actions.action_restart'); ?>
             </button>
             <?php
             $this->Form->end();
@@ -38,7 +38,7 @@
             $this->Form->fieldHidden('action', 'reinstall');
             ?>
             <button<?php echo $this->Html->ifSet($status) == 'locked' ? ' disabled="disabled"' : '';?> class="btn btn-default btn-block" style="margin-top: 10px;">
-                <i class="fa fa-refresh"></i> <?php $this->_('Vultr.tab_client_actions.action_reinstall_template'); ?>
+                <i class="fas fa-sync-alt"></i> <?php $this->_('Vultr.tab_client_actions.action_reinstall_template'); ?>
             </button>
             <?php
             $this->Form->end();
@@ -49,7 +49,7 @@
             $this->Form->fieldHidden('action', 'enable_ipv6');
             ?>
             <button<?php echo $this->Html->ifSet($status) != 'online' || !$this->Html->ifSet($ipv6_enablable) ? ' disabled="disabled"' : ''; ?> class="btn btn-default btn-block" style="margin-top: 10px;">
-                <i class="fa fa-server"></i> <?php $this->_('Vultr.tab_actions.action_enable_ipv6'); ?>
+                <i class="fas fa-server"></i> <?php $this->_('Vultr.tab_actions.action_enable_ipv6'); ?>
             </button>
             <?php
             $this->Form->end();
@@ -61,14 +61,14 @@
             $this->Form->fieldHidden('action', 'stop');
             ?>
             <button<?php echo $this->Html->ifSet($status) != 'online' ? ' disabled="disabled"' : ''; ?> class="btn btn-default btn-block btn-danger">
-                <i class="fa fa-stop"></i> <?php $this->_('Vultr.tab_client_actions.action_stop'); ?>
+                <i class="fas fa-stop"></i> <?php $this->_('Vultr.tab_client_actions.action_stop'); ?>
             </button>
             <?php
             $this->Form->end();
             ?>
 
             <a href="#" class="change_template btn btn-default btn-block<?php echo $this->Html->ifSet($package->meta->set_template) != 'client' || $this->Html->ifSet($status) == 'locked' ? ' disabled' : ''; ?>" style="margin-top: 10px;">
-                <i class="fa fa-download"></i> <?php $this->_('Vultr.tab_client_actions.action_change_template'); ?>
+                <i class="fas fa-download"></i> <?php $this->_('Vultr.tab_client_actions.action_change_template'); ?>
             </a>
         </div>
         <div class="col-md-4">
@@ -77,14 +77,14 @@
             $this->Form->fieldHidden('action', 'start');
             ?>
             <button<?php echo $this->Html->ifSet($status) != 'offline' || $package->meta->server_type == 'baremetal' ? ' disabled="disabled"' : ''; ?> class="btn btn-default btn-block">
-                <i class="fa fa-play"></i> <?php $this->_('Vultr.tab_client_actions.action_start'); ?>
+                <i class="fas fa-play"></i> <?php $this->_('Vultr.tab_client_actions.action_start'); ?>
             </button>
             <?php
             $this->Form->end();
             ?>
 
             <a href="<?php echo $this->Html->ifSet($server_details->kvm_url); ?>" class="btn btn-default btn-block<?php echo empty($this->Html->ifSet($server_details->kvm_url)) || $this->Html->ifSet($status) == 'locked' ? ' disabled' : ''; ?>" target="_blank" style="margin-top: 10px;">
-                <i class="fa fa-terminal"></i> <?php $this->_('Vultr.tab_client_actions.action_kvm_console'); ?>
+                <i class="fas fa-terminal"></i> <?php $this->_('Vultr.tab_client_actions.action_kvm_console'); ?>
             </a>
         </div>
     </div>
@@ -109,7 +109,7 @@
                 </div>
 
                 <button class="btn btn-default pull-right">
-                    <i class="fa fa-download"></i> <?php $this->_('Vultr.tab_client_actions.field_change_template_submit'); ?>
+                    <i class="fas fa-download"></i> <?php $this->_('Vultr.tab_client_actions.field_change_template_submit'); ?>
                 </button>
             </div>
             <?php
