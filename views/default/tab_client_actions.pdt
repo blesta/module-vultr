@@ -14,7 +14,7 @@
     ?>
 
     <div id="vultr_status_badge">
-        <span class="label label-<?php $this->Html->_($status_class); ?>">
+        <span class="badge badge-<?php $this->Html->_($status_class); ?>">
             <i class="fas fa-lightbulb"></i> <?php $this->_('Vultr.tab_client_actions.status_' . $this->Html->_($status, true)); ?>
         </span>
     </div>
