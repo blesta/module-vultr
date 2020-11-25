@@ -103,11 +103,11 @@
 
     <h4><?php $this->_('Vultr.tab_client_snapshots.heading_create'); ?></h4>
     <div class="row">
-        <?php
-        $this->Form->create();
-        $this->Form->fieldHidden('action', 'create');
-        ?>
         <div class="col-md-12">
+            <?php
+            $this->Form->create();
+            $this->Form->fieldHidden('action', 'create');
+            ?>
             <div class="form-group">
                 <?php
                 $this->Form->label($this->_('Vultr.tab_client_snapshots.field_description', true), 'description');
@@ -118,8 +118,8 @@
             <button class="btn btn-default pull-right">
                 <i class="fas fa-plus"></i> <?php $this->_('Vultr.tab_client_snapshots.field_create_submit');?>
             </button>
+            <?php
+            $this->Form->end();
+            ?>
         </div>
-        <?php
-        $this->Form->end();
-        ?>
     </div>
