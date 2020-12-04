@@ -16,7 +16,7 @@
     }
     ?>
     <div class="pad" id="vultr_status_badge">
-        <span class="label label-<?php $this->Html->_($status_class); ?>">
+        <span class="badge badge-<?php $this->Html->_($status_class); ?>">
             <i class="fas fa-lightbulb"></i> <?php $this->_('Vultr.tab_client_actions.status_' . $this->Html->_($status, true)); ?>
         </span>
     </div>
@@ -31,7 +31,7 @@
                 $this->Form->create();
                 $this->Form->fieldHidden('action', 'restart');
                 ?>
-                <button<?php echo $this->Html->ifSet($status) != 'online' ? ' disabled="disabled"' : ''; ?> class="btn btn-default btn-block btn-success">
+                <button<?php echo $this->Html->ifSet($status) != 'online' ? ' disabled="disabled"' : ''; ?> class="btn btn-block btn-success">
                     <i class="fas fa-sync-alt"></i> <?php $this->_('Vultr.tab_actions.action_restart'); ?>
                 </button>
                 <?php
@@ -65,7 +65,7 @@
                 $this->Form->create();
                 $this->Form->fieldHidden('action', 'stop');
                 ?>
-                <button<?php echo $this->Html->ifSet($status) != 'online' ? ' disabled="disabled"' : ''; ?> class="btn btn-default btn-block btn-danger">
+                <button<?php echo $this->Html->ifSet($status) != 'online' ? ' disabled="disabled"' : ''; ?> class="btn btn-block btn-danger">
                     <i class="fas fa-stop"></i> <?php $this->_('Vultr.tab_actions.action_stop'); ?>
                 </button>
                 <?php
