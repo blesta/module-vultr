@@ -111,7 +111,7 @@
             <div class="form-group">
                 <?php
                 $this->Form->label($this->_('Vultr.tab_client_snapshots.field_description', true), 'description');
-                $this->Form->fieldText('description', $this->Html->ifSet($vars->description), ['id' => 'description', 'class' => 'form-control', 'placeholder' => $this->_('Vultr.tab_client_snapshots.field_description', true)]);
+                $this->Form->fieldText('description', (isset($vars->description) ? $vars->description : null), ['id' => 'description', 'class' => 'form-control', 'placeholder' => $this->_('Vultr.tab_client_snapshots.field_description', true)]);
                 ?>
             </div>
 

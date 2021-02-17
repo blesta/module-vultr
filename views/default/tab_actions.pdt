@@ -4,10 +4,10 @@
     </div>
 
     <?php
-    if ($this->Html->ifSet($server_details->server_state) == 'locked') {
+    if ((isset($server_details->server_state) ? $server_details->server_state : null) == 'locked') {
         $status_class = 'warning';
         $status = 'locked';
-    } elseif ($this->Html->ifSet($server_details->power_status) == 'running' && $this->Html->ifSet($server_details->status) == 'active') {
+    } elseif ((isset($server_details->power_status) ? $server_details->power_status : null) == 'running' && (isset($server_details->status) ? $server_details->status : null) == 'active') {
         $status_class = 'success';
         $status = 'online';
     } else {
@@ -31,7 +31,7 @@
                 $this->Form->create();
                 $this->Form->fieldHidden('action', 'restart');
                 ?>
-                <button<?php echo $this->Html->ifSet($status) != 'online' ? ' disabled="disabled"' : ''; ?> class="btn btn-block btn-success">
+                <button<?php echo (isset($status) ? $status : null) != 'online' ? ' disabled="disabled"' : ''; ?> class="btn btn-block btn-success">
                     <i class="fas fa-sync-alt"></i> <?php $this->_('Vultr.tab_actions.action_restart'); ?>
                 </button>
                 <?php
@@ -42,7 +42,7 @@
                 $this->Form->create();
                 $this->Form->fieldHidden('action', 'reinstall');
                 ?>
-                <button<?php echo $this->Html->ifSet($status) == 'locked' ? ' disabled="disabled"' : '';?> class="btn btn-default btn-block" style="margin-top: 10px;">
+                <button<?php echo (isset($status) ? $status : null) == 'locked' ? ' disabled="disabled"' : '';?> class="btn btn-default btn-block" style="margin-top: 10px;">
                     <i class="fas fa-sync-alt"></i> <?php $this->_('Vultr.tab_client_actions.action_reinstall_template'); ?>
                 </button>
                 <?php
@@ -53,7 +53,7 @@
                 $this->Form->create();
                 $this->Form->fieldHidden('action', 'enable_ipv6');
                 ?>
-                <button<?php echo $this->Html->ifSet($status) != 'online' || !$this->Html->ifSet($ipv6_enablable) ? ' disabled="disabled"' : ''; ?> class="btn btn-default btn-block" style="margin-top: 10px;">
+                <button<?php echo (isset($status) ? $status : null) != 'online' || !(isset($ipv6_enablable) ? $ipv6_enablable : null) ? ' disabled="disabled"' : ''; ?> class="btn btn-default btn-block" style="margin-top: 10px;">
                     <i class="fas fa-server"></i> <?php $this->_('Vultr.tab_actions.action_enable_ipv6'); ?>
                 </button>
                 <?php
@@ -65,14 +65,14 @@
                 $this->Form->create();
                 $this->Form->fieldHidden('action', 'stop');
                 ?>
-                <button<?php echo $this->Html->ifSet($status) != 'online' ? ' disabled="disabled"' : ''; ?> class="btn btn-block btn-danger">
+                <button<?php echo (isset($status) ? $status : null) != 'online' ? ' disabled="disabled"' : ''; ?> class="btn btn-block btn-danger">
                     <i class="fas fa-stop"></i> <?php $this->_('Vultr.tab_actions.action_stop'); ?>
                 </button>
                 <?php
                 $this->Form->end();
                 ?>
 
-                <a href="#" class="change_template btn btn-default btn-block<?php echo $this->Html->ifSet($package->meta->set_template) != 'client' || $this->Html->ifSet($status) == 'locked' ? ' disabled' : ''; ?>" style="margin-top: 10px; float: left; padding: 6px 0px;">
+                <a href="#" class="change_template btn btn-default btn-block<?php echo (isset($package->meta->set_template) ? $package->meta->set_template : null) != 'client' || (isset($status) ? $status : null) == 'locked' ? ' disabled' : ''; ?>" style="margin-top: 10px; float: left; padding: 6px 0px;">
                     <i class="fas fa-download"></i> <?php $this->_('Vultr.tab_client_actions.action_change_template'); ?>
                 </a>
             </div>
@@ -81,7 +81,7 @@
                 $this->Form->create();
                 $this->Form->fieldHidden('action', 'start');
                 ?>
-                <button<?php echo $this->Html->ifSet($status) != 'offline' || $this->Html->ifSet($package->meta->server_type) == 'baremetal' ? ' disabled="disabled"' : ''; ?> class="btn btn-default btn-block">
+                <button<?php echo (isset($status) ? $status : null) != 'offline' || (isset($package->meta->server_type) ? $package->meta->server_type : null) == 'baremetal' ? ' disabled="disabled"' : ''; ?> class="btn btn-default btn-block">
                     <i class="fas fa-play"></i> <?php $this->_('Vultr.tab_actions.action_start'); ?>
                 </button>
                 <?php
@@ -89,9 +89,9 @@
                 ?>
 
                 <?php
-                $this->Form->create($this->Html->ifSet($server_details->kvm_url), ['target' => '_blank']);
+                $this->Form->create((isset($server_details->kvm_url) ? $server_details->kvm_url : null), ['target' => '_blank']);
                 ?>
-                <button<?php echo $this->Html->ifSet($status) == 'locked' ? ' disabled="disabled"' : '';?> class="btn btn-default btn-block" style="margin-top: 10px;">
+                <button<?php echo (isset($status) ? $status : null) == 'locked' ? ' disabled="disabled"' : '';?> class="btn btn-default btn-block" style="margin-top: 10px;">
                     <i class="fas fa-terminal"></i> <?php $this->_('Vultr.tab_actions.action_kvm_console'); ?>
                 </button>
                 <?php
@@ -102,7 +102,7 @@
     </div>
 
     <?php
-    if ($this->Html->ifSet($package->meta->set_template) == 'client') {
+    if ((isset($package->meta->set_template) ? $package->meta->set_template : null) == 'client') {
     ?>
     <div id="change_template" style="display:none;">
         <?php
@@ -117,7 +117,7 @@
                 <li>
                     <?php
                     $this->Form->label($this->_('Vultr.tab_actions.field_template', true), 'template');
-                    $this->Form->fieldSelect('template', $this->Html->ifSet($templates), $this->Html->ifSet($vars->template, $this->Html->ifSet($service_fields->vultr_template)), ['id' => 'template']);
+                    $this->Form->fieldSelect('template', (isset($templates) ? $templates : null), $this->Html->ifSet($vars->template, $this->Html->ifSet($service_fields->vultr_template)), ['id' => 'template']);
                     ?>
                 </li>
             </ul>
@@ -140,7 +140,7 @@
         $(document).ready(function() {
             setVultrInterval('<?php echo Configure::get('Vultr.page_refresh_rate_fast');?>', '');
             <?php
-            if ($this->Html->ifSet($vars->template, false)) {
+            if ((isset($vars->template) ? $vars->template : false)) {
             ?>
             showSection('change_template');
             <?php
@@ -165,7 +165,7 @@
             function setVultrInterval(refresh_rate, old_action_data) {
                 var interval = setInterval(function() {
                     $(this).blestaRequest("GET",
-                        '<?php echo $this->base_uri . 'clients/servicetab/' . $this->Html->ifSet($service->client_id) . '/' . $this->Html->ifSet($service->id) . '/tabActions/';?>',
+                        '<?php echo $this->base_uri . 'clients/servicetab/' . (isset($service->client_id) ? $service->client_id : null) . '/' . (isset($service->id) ? $service->id : null) . '/tabActions/';?>',
                         null,
                         // Success response
                         function(data) {

@@ -3,7 +3,7 @@
     </div>
     <div class="pad">
         <?php
-        if ($this->Html->ifSet($service_options->enable_backup) == 'enable') {
+        if ((isset($service_options->enable_backup) ? $service_options->enable_backup : null) == 'enable') {
             $this->Form->create();
             $this->Form->fieldHidden('backupid', '', ['id' => 'backupid']);
             $this->Form->fieldHidden('action', '', ['id' => 'action']);
