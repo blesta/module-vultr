@@ -16,8 +16,8 @@
     }
     ?>
     <div class="pad" id="vultr_status_badge">
-        <span class="badge badge-<?php $this->Html->_($status_class); ?>">
-            <i class="fas fa-lightbulb"></i> <?php $this->_('Vultr.tab_client_actions.status_' . $this->Html->_($status, true)); ?>
+        <span class="badge badge-<?php (echo isset($status_class) ? $this->Html->safe($status_class) : null); ?>">
+            <i class="fas fa-lightbulb"></i> <?php $this->_('Vultr.tab_client_actions.status_' . (isset($status) ? $this->Html->safe($status) : null)); ?>
         </span>
     </div>
 

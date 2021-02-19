@@ -16,7 +16,7 @@
                 ?>
                 <tr>
                     <td><?php $this->_('Vultr.tab_client_stats.info.' . $key); ?></td>
-                    <td><?php $this->Html->_($value); ?></td>
+                    <td><?php (echo isset($value) ? $this->Html->safe($value) : null); ?></td>
                 </tr>
                 <?php
                 }
@@ -31,7 +31,7 @@
     ?>
     <hr>
     <h4><?php $this->_('Vultr.tab_client_stats.app_information'); ?></h4>
-    <pre><?php $this->Html->_($application_details->app_info); ?></pre>
+    <pre><?php (echo isset($application_details->app_info) ? $this->Html->safe($application_details->app_info) : null); ?></pre>
     <?php
     }
     ?>

@@ -23,11 +23,11 @@
                 foreach ($backups as $backupid => $backup) {
                     ?>
                 <tr<?php echo ($i % 2 == 1) ? ' class="odd_row"' : ''; ?>>
-                    <td><strong><?php $this->Html->_($backupid); ?></strong></td>
-                    <td><?php $this->Html->_($backup->date_created); ?></td>
-                    <td><?php $this->Html->_($backup->description); ?></td>
+                    <td><strong><?php (echo isset($backupid) ? $this->Html->safe($backupid) : null); ?></strong></td>
+                    <td><?php (echo isset($backup->date_created) ? $this->Html->safe($backup->date_created) : null); ?></td>
+                    <td><?php (echo isset($backup->description) ? $this->Html->safe($backup->description) : null); ?></td>
                     <td>
-                        <a class="restore-backup submit" href="#" data-id="<?php $this->Html->_($backupid); ?>">
+                        <a class="restore-backup submit" href="#" data-id="<?php (echo isset($backupid) ? $this->Html->safe($backupid) : null); ?>">
                             <?php $this->_('Vultr.tab_backups.restore_backup'); ?>
                         </a>
                     </td>
