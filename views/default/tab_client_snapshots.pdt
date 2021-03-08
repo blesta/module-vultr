@@ -22,15 +22,15 @@
                 foreach ($snapshots as $snapshot) {
                 ?>
                 <tr>
-                    <td><strong><?php (echo isset($snapshot->SNAPSHOTID) ? $this->Html->safe($snapshot->SNAPSHOTID) : null); ?></strong></td>
-                    <td><?php (echo isset($snapshot->description) ? $this->Html->safe($snapshot->description) : null); ?></td>
+                    <td><strong><?php echo (isset($snapshot->SNAPSHOTID) ? $this->Html->safe($snapshot->SNAPSHOTID) : null); ?></strong></td>
+                    <td><?php echo (isset($snapshot->description) ? $this->Html->safe($snapshot->description) : null); ?></td>
                     <td><?php echo ucwords($this->Html->safe($snapshot->status)); ?></td>
                     <td>
-                        <a class="btn btn-xs btn-success restore-snapshot" href="#" data-id="<?php (echo isset($snapshot->SNAPSHOTID) ? $this->Html->safe($snapshot->SNAPSHOTID) : null); ?>" data-toggle="modal" data-target="#restore-snapshot<?php (echo isset($snapshot->SNAPSHOTID) ? $this->Html->safe($snapshot->SNAPSHOTID) : null); ?>">
+                        <a class="btn btn-xs btn-success restore-snapshot" href="#" data-id="<?php echo (isset($snapshot->SNAPSHOTID) ? $this->Html->safe($snapshot->SNAPSHOTID) : null); ?>" data-toggle="modal" data-target="#restore-snapshot<?php echo (isset($snapshot->SNAPSHOTID) ? $this->Html->safe($snapshot->SNAPSHOTID) : null); ?>">
                             <i class="fas fa-check"></i>
                             <?php $this->_('Vultr.tab_client_snapshots.restore_snapshot'); ?>
                         </a>
-                        <div id="restore-snapshot<?php (echo isset($snapshot->SNAPSHOTID) ? $this->Html->safe($snapshot->SNAPSHOTID) : null); ?>" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+                        <div id="restore-snapshot<?php echo (isset($snapshot->SNAPSHOTID) ? $this->Html->safe($snapshot->SNAPSHOTID) : null); ?>" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
                             <div class="modal-dialog">
                                 <div class="modal-content">
                                     <div class="modal-header">
@@ -48,11 +48,11 @@
                             </div>
                         </div>
 
-                        <a class="btn btn-xs btn-danger remove-snapshot" href="#" data-id="<?php (echo isset($snapshot->SNAPSHOTID) ? $this->Html->safe($snapshot->SNAPSHOTID) : null); ?>" data-toggle="modal" data-target="#remove-snapshot<?php (echo isset($snapshot->SNAPSHOTID) ? $this->Html->safe($snapshot->SNAPSHOTID) : null); ?>">
+                        <a class="btn btn-xs btn-danger remove-snapshot" href="#" data-id="<?php echo (isset($snapshot->SNAPSHOTID) ? $this->Html->safe($snapshot->SNAPSHOTID) : null); ?>" data-toggle="modal" data-target="#remove-snapshot<?php echo (isset($snapshot->SNAPSHOTID) ? $this->Html->safe($snapshot->SNAPSHOTID) : null); ?>">
                             <i class="fas fa-ban fa-fw"></i>
                             <?php $this->_('Vultr.tab_client_snapshots.remove_snapshot'); ?>
                         </a>
-                        <div id="remove-snapshot<?php (echo isset($snapshot->SNAPSHOTID) ? $this->Html->safe($snapshot->SNAPSHOTID) : null); ?>" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+                        <div id="remove-snapshot<?php echo (isset($snapshot->SNAPSHOTID) ? $this->Html->safe($snapshot->SNAPSHOTID) : null); ?>" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
                             <div class="modal-dialog">
                                 <div class="modal-content">
                                     <div class="modal-header">

@@ -23,11 +23,11 @@
                 foreach ($backups as $backupid => $backup) {
                 ?>
                 <tr>
-                    <td><strong><?php (echo isset($backupid) ? $this->Html->safe($backupid) : null); ?></strong></td>
-                    <td><?php (echo isset($backup->date_created) ? $this->Html->safe($backup->date_created) : null); ?></td>
-                    <td><?php (echo isset($backup->description) ? $this->Html->safe($backup->description) : null); ?></td>
+                    <td><strong><?php echo (isset($backupid) ? $this->Html->safe($backupid) : null); ?></strong></td>
+                    <td><?php echo (isset($backup->date_created) ? $this->Html->safe($backup->date_created) : null); ?></td>
+                    <td><?php echo (isset($backup->description) ? $this->Html->safe($backup->description) : null); ?></td>
                     <td>
-                        <a class="btn btn-xs btn-success restore-backup" href="#" data-id="<?php (echo isset($backupid) ? $this->Html->safe($backupid) : null); ?>" data-toggle="modal" data-target="#restore-backup<?php echo $backupid; ?>">
+                        <a class="btn btn-xs btn-success restore-backup" href="#" data-id="<?php echo (isset($backupid) ? $this->Html->safe($backupid) : null); ?>" data-toggle="modal" data-target="#restore-backup<?php echo $backupid; ?>">
                             <i class="fas fa-check"></i>
                             <?php $this->_('Vultr.tab_client_backups.restore_backup'); ?>
                         </a>

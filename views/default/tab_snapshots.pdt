@@ -21,15 +21,15 @@
                 foreach ($snapshots as $snapshot) {
                 ?>
                 <tr<?php echo ($i % 2 == 1) ? ' class="odd_row"' : ''; ?>>
-                    <td><strong><?php (echo isset($snapshot->SNAPSHOTID) ? $this->Html->safe($snapshot->SNAPSHOTID) : null); ?></strong></td>
-                    <td><?php (echo isset($snapshot->description) ? $this->Html->safe($snapshot->description) : null); ?></td>
+                    <td><strong><?php echo (isset($snapshot->SNAPSHOTID) ? $this->Html->safe($snapshot->SNAPSHOTID) : null); ?></strong></td>
+                    <td><?php echo (isset($snapshot->description) ? $this->Html->safe($snapshot->description) : null); ?></td>
                     <td><?php echo ucwords($this->Html->safe($snapshot->status)); ?></td>
                     <td>
-                        <a class="restore-snapshot submit restore-snapshot" href="#" data-id="<?php (echo isset($snapshot->SNAPSHOTID) ? $this->Html->safe($snapshot->SNAPSHOTID) : null); ?>">
+                        <a class="restore-snapshot submit restore-snapshot" href="#" data-id="<?php echo (isset($snapshot->SNAPSHOTID) ? $this->Html->safe($snapshot->SNAPSHOTID) : null); ?>">
                             <?php $this->_('Vultr.tab_snapshots.restore_snapshot'); ?>
                         </a>,
 
-                        <a class="manage submit remove-snapshot" href="#" data-id="<?php (echo isset($snapshot->SNAPSHOTID) ? $this->Html->safe($snapshot->SNAPSHOTID) : null); ?>">
+                        <a class="manage submit remove-snapshot" href="#" data-id="<?php echo (isset($snapshot->SNAPSHOTID) ? $this->Html->safe($snapshot->SNAPSHOTID) : null); ?>">
                             <?php $this->_('Vultr.tab_snapshots.remove_snapshot'); ?>
                         </a>
                     </td>

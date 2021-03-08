@@ -751,7 +751,7 @@ class Vultr extends Module
         $subid->attach(
             $fields->fieldText(
                 'vultr_subid',
-                $this->Html->ifSet($vars->vultr_subid, $this->Html->ifSet($vars->subid)),
+                (isset($vars->vultr_subid) ? $vars->vultr_subid : ($vars->subid ?? null)),
                 ['id' => 'vultr_subid']
             )
         );
@@ -767,7 +767,7 @@ class Vultr extends Module
         $hostname->attach(
             $fields->fieldText(
                 'vultr_hostname',
-                $this->Html->ifSet($vars->vultr_hostname, $this->Html->ifSet($vars->hostname)),
+                (isset($vars->vultr_hostname) ? $vars->vultr_hostname : ($vars->hostname ?? null)),
                 ['id' => 'vultr_hostname']
             )
         );
@@ -780,7 +780,7 @@ class Vultr extends Module
             $fields->fieldSelect(
                 'vultr_location',
                 $locations,
-                $this->Html->ifSet($vars->vultr_location, $this->Html->ifSet($vars->location)),
+                (isset($vars->vultr_location) ? $vars->vultr_location : ($vars->location ?? null)),
                 ['id' => 'vultr_location']
             )
         );
@@ -793,7 +793,7 @@ class Vultr extends Module
                 $fields->fieldSelect(
                     'vultr_template',
                     $templates,
-                    $this->Html->ifSet($vars->vultr_template, $this->Html->ifSet($vars->template)),
+                    (isset($vars->vultr_template) ? $vars->vultr_template : ($vars->template ?? null)),
                     ['id' => 'vultr_template']
                 )
             );
@@ -808,7 +808,10 @@ class Vultr extends Module
             $fields->fieldRadio(
                 'vultr_enable_ipv6',
                 'enable',
-                $this->Html->ifSet($vars->vultr_enable_ipv6, $this->Html->ifSet($vars->ipv6, 'enable')) == 'enable',
+                (isset($vars->vultr_enable_ipv6)
+                    ? $vars->vultr_enable_ipv6
+                    : (isset($vars->ipv6) ? $vars->ipv6 : 'enable')
+                ) == 'enable',
                 ['id' => 'vultr_enable_ipv6'],
                 $enable_ipv6_label
             )
@@ -819,7 +822,7 @@ class Vultr extends Module
             $fields->fieldRadio(
                 'vultr_enable_ipv6',
                 'disable',
-                $this->Html->ifSet($vars->vultr_enable_ipv6, $this->Html->ifSet($vars->ipv6)) == 'disable',
+                (isset($vars->vultr_enable_ipv6) ? $vars->vultr_enable_ipv6 : ($vars->ipv6 ?? null)) == 'disable',
                 ['id' => 'vultr_disable_ipv6'],
                 $disable_ipv6_label
             )
@@ -859,7 +862,7 @@ class Vultr extends Module
         $hostname->attach(
             $fields->fieldText(
                 'vultr_hostname',
-                $this->Html->ifSet($vars->vultr_hostname, $this->Html->ifSet($vars->hostname)),
+                (isset($vars->vultr_hostname) ? $vars->vultr_hostname : ($vars->hostname ?? null)),
                 ['id' => 'vultr_hostname']
             )
         );
@@ -872,7 +875,7 @@ class Vultr extends Module
             $fields->fieldSelect(
                 'vultr_location',
                 $locations,
-                $this->Html->ifSet($vars->vultr_location, $this->Html->ifSet($vars->location)),
+                (isset($vars->vultr_location) ? $vars->vultr_location : ($vars->location ?? null)),
                 ['id' => 'vultr_location']
             )
         );
@@ -885,7 +888,7 @@ class Vultr extends Module
                 $fields->fieldSelect(
                     'vultr_template',
                     $templates,
-                    $this->Html->ifSet($vars->vultr_template, $this->Html->ifSet($vars->template)),
+                    (isset($vars->vultr_template) ? $vars->vultr_template : ($vars->template ?? null)),
                     ['id' => 'vultr_template']
                 )
             );
@@ -900,7 +903,10 @@ class Vultr extends Module
             $fields->fieldRadio(
                 'vultr_enable_ipv6',
                 'enable',
-                $this->Html->ifSet($vars->vultr_enable_ipv6, $this->Html->ifSet($vars->ipv6, 'enable')) == 'enable',
+                (isset($vars->vultr_enable_ipv6)
+                    ? $vars->vultr_enable_ipv6
+                    : (isset($vars->ipv6) ? $vars->ipv6 : 'enable')
+                ) == 'enable',
                 ['id' => 'vultr_enable_ipv6'],
                 $enable_ipv6_label
             )
@@ -911,7 +917,7 @@ class Vultr extends Module
             $fields->fieldRadio(
                 'vultr_enable_ipv6',
                 'disable',
-                $this->Html->ifSet($vars->vultr_enable_ipv6, $this->Html->ifSet($vars->ipv6)) == 'disable',
+                (isset($vars->vultr_enable_ipv6) ? $vars->vultr_enable_ipv6 : ($vars->ipv6 ?? null)) == 'disable',
                 ['id' => 'vultr_disable_ipv6'],
                 $disable_ipv6_label
             )
@@ -949,7 +955,7 @@ class Vultr extends Module
         $subid->attach(
             $fields->fieldText(
                 'vultr_subid',
-                $this->Html->ifSet($vars->vultr_subid, $this->Html->ifSet($vars->subid)),
+                (isset($vars->vultr_subid) ? $vars->vultr_subid : ($vars->subid ?? null)),
                 ['id' => 'vultr_subid']
             )
         );
@@ -966,7 +972,7 @@ class Vultr extends Module
                 $fields->fieldSelect(
                     'vultr_template',
                     $templates,
-                    $this->Html->ifSet($vars->vultr_template, $this->Html->ifSet($vars->template)),
+                    (isset($vars->vultr_template) ? $vars->vultr_template : ($vars->template ?? null)),
                     ['id' => 'vultr_template']
                 )
             );

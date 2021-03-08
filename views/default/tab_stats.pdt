@@ -19,7 +19,7 @@
                         ?>
                     <tr<?php echo $this->Html->concat(' ', ($i % 2 == 1) ? ' class="odd_row"' : '', ''); ?>>
                         <td><?php $this->_('Vultr.tab_stats.info.' . $key); ?></td>
-                        <td><?php (echo isset($value) ? $this->Html->safe($value) : null); ?></td>
+                        <td><?php echo (isset($value) ? $this->Html->safe($value) : null); ?></td>
                     </tr>
                     <?php
                         $i++;
@@ -38,7 +38,7 @@
     </div>
     <div class="pad">
         <div class="empty_box">
-            <pre><?php (echo isset($application_details->app_info) ? $this->Html->safe($application_details->app_info) : null); ?></pre>
+            <pre><?php echo (isset($application_details->app_info) ? $this->Html->safe($application_details->app_info) : null); ?></pre>
         </div>
     </div>
     <?php

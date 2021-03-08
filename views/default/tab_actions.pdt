@@ -16,7 +16,7 @@
     }
     ?>
     <div class="pad" id="vultr_status_badge">
-        <span class="badge badge-<?php (echo isset($status_class) ? $this->Html->safe($status_class) : null); ?>">
+        <span class="badge badge-<?php echo (isset($status_class) ? $this->Html->safe($status_class) : null); ?>">
             <i class="fas fa-lightbulb"></i> <?php $this->_('Vultr.tab_client_actions.status_' . (isset($status) ? $this->Html->safe($status) : null)); ?>
         </span>
     </div>
@@ -117,7 +117,7 @@
                 <li>
                     <?php
                     $this->Form->label($this->_('Vultr.tab_actions.field_template', true), 'template');
-                    $this->Form->fieldSelect('template', (isset($templates) ? $templates : null), $this->Html->ifSet($vars->template, $this->Html->ifSet($service_fields->vultr_template)), ['id' => 'template']);
+                    $this->Form->fieldSelect('template', (isset($templates) ? $templates : null), (isset($vars->template) ? $vars->template : ($service_fields->vultr_template ?? null)), ['id' => 'template']);
                     ?>
                 </li>
             </ul>
