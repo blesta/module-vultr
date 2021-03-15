@@ -172,7 +172,7 @@ class Vultr extends Module
             $fields->fieldSelect(
                 'meta[server_type]',
                 $this->getServerTypes(),
-                $this->Html->ifSet($vars->meta['server_type']),
+                (isset($vars->meta['server_type']) ? $vars->meta['server_type'] : null),
                 ['id' => 'vultr_server_type']
             )
         );
@@ -187,7 +187,7 @@ class Vultr extends Module
             $fields->fieldSelect(
                 'meta[baremetal_plan]',
                 $baremetal_plans,
-                $this->Html->ifSet($vars->meta['baremetal_plan']),
+                (isset($vars->meta['baremetal_plan']) ? $vars->meta['baremetal_plan'] : null),
                 ['id' => 'vultr_baremetal_plan']
             )
         );
@@ -202,7 +202,7 @@ class Vultr extends Module
             $fields->fieldSelect(
                 'meta[server_plan]',
                 $server_plans,
-                $this->Html->ifSet($vars->meta['server_plan']),
+                (isset($vars->meta['server_plan']) ? $vars->meta['server_plan'] : null),
                 ['id' => 'vultr_server_plan']
             )
         );
@@ -216,7 +216,7 @@ class Vultr extends Module
             $fields->fieldRadio(
                 'meta[set_template]',
                 'admin',
-                $this->Html->ifSet($vars->meta['set_template'], 'admin') == 'admin',
+                (isset($vars->meta['set_template']) ? $vars->meta['set_template'] : 'admin') == 'admin',
                 ['id' => 'vultr_admin_set_template'],
                 $admin_set_template_label
             )
@@ -227,7 +227,7 @@ class Vultr extends Module
             $fields->fieldRadio(
                 'meta[set_template]',
                 'client',
-                $this->Html->ifSet($vars->meta['set_template']) == 'client',
+                (isset($vars->meta['set_template']) ? $vars->meta['set_template'] : null) == 'client',
                 ['id' => 'vultr_client_set_template'],
                 $client_set_template_label
             )
@@ -244,7 +244,7 @@ class Vultr extends Module
             $fields->fieldSelect(
                 'meta[template]',
                 $server_templates,
-                $this->Html->ifSet($vars->meta['template']),
+                (isset($vars->meta['template']) ? $vars->meta['template'] : null),
                 ['id' => 'vultr_template']
             )
         );
@@ -260,7 +260,7 @@ class Vultr extends Module
             $fields->fieldRadio(
                 'meta[surcharge_templates]',
                 'allow',
-                $this->Html->ifSet($vars->meta['surcharge_templates'], 'allow') == 'allow',
+                (isset($vars->meta['surcharge_templates']) ? $vars->meta['surcharge_templates'] : 'allow') == 'allow',
                 ['id' => 'vultr_allow_surcharge_templates'],
                 $allow_surcharge_templates_label
             )
@@ -273,7 +273,7 @@ class Vultr extends Module
             $fields->fieldRadio(
                 'meta[surcharge_templates]',
                 'disallow',
-                $this->Html->ifSet($vars->meta['surcharge_templates']) == 'disallow',
+                (isset($vars->meta['surcharge_templates']) ? $vars->meta['surcharge_templates'] : null) == 'disallow',
                 ['id' => 'vultr_disallow_surcharge_templates'],
                 $disallow_surcharge_templates_label
             )
@@ -396,7 +396,7 @@ class Vultr extends Module
             if (!in_array($os->OSID, $excluded_os)) {
                 if (!$os->windows
                     || is_null($package)
-                    || ($os->windows && $this->Html->ifSet($package->meta->surcharge_templates) == 'allow')
+                    || ($os->windows && (isset($package->meta->surcharge_templates) ? $package->meta->surcharge_templates : null) == 'allow')
                 ) {
                     $templates['os-' . $os->OSID] = $os->name . ($os->windows && is_null($package) ? ' (+$16)' : null);
                 }
@@ -406,7 +406,7 @@ class Vultr extends Module
         foreach ($result_app as $app) {
             if (!$app->surcharge
                 || is_null($package)
-                || ($app->surcharge && $this->Html->ifSet($package->meta->surcharge_templates) == 'allow')
+                || ($app->surcharge && (isset($package->meta->surcharge_templates) ? $package->meta->surcharge_templates : null) == 'allow')
             ) {
                 $templates['app-' . $app->APPID] = $app->deploy_name
                     . ($app->surcharge && is_null($package) ? ' (+$' . (int) $app->surcharge . ')' : null);
@@ -751,7 +751,7 @@ class Vultr extends Module
         $subid->attach(
             $fields->fieldText(
                 'vultr_subid',
-                $this->Html->ifSet($vars->vultr_subid, $this->Html->ifSet($vars->subid)),
+                (isset($vars->vultr_subid) ? $vars->vultr_subid : ($vars->subid ?? null)),
                 ['id' => 'vultr_subid']
             )
         );
@@ -767,7 +767,7 @@ class Vultr extends Module
         $hostname->attach(
             $fields->fieldText(
                 'vultr_hostname',
-                $this->Html->ifSet($vars->vultr_hostname, $this->Html->ifSet($vars->hostname)),
+                (isset($vars->vultr_hostname) ? $vars->vultr_hostname : ($vars->hostname ?? null)),
                 ['id' => 'vultr_hostname']
             )
         );
@@ -780,7 +780,7 @@ class Vultr extends Module
             $fields->fieldSelect(
                 'vultr_location',
                 $locations,
-                $this->Html->ifSet($vars->vultr_location, $this->Html->ifSet($vars->location)),
+                (isset($vars->vultr_location) ? $vars->vultr_location : ($vars->location ?? null)),
                 ['id' => 'vultr_location']
             )
         );
@@ -793,7 +793,7 @@ class Vultr extends Module
                 $fields->fieldSelect(
                     'vultr_template',
                     $templates,
-                    $this->Html->ifSet($vars->vultr_template, $this->Html->ifSet($vars->template)),
+                    (isset($vars->vultr_template) ? $vars->vultr_template : ($vars->template ?? null)),
                     ['id' => 'vultr_template']
                 )
             );
@@ -808,7 +808,10 @@ class Vultr extends Module
             $fields->fieldRadio(
                 'vultr_enable_ipv6',
                 'enable',
-                $this->Html->ifSet($vars->vultr_enable_ipv6, $this->Html->ifSet($vars->ipv6, 'enable')) == 'enable',
+                (isset($vars->vultr_enable_ipv6)
+                    ? $vars->vultr_enable_ipv6
+                    : (isset($vars->ipv6) ? $vars->ipv6 : 'enable')
+                ) == 'enable',
                 ['id' => 'vultr_enable_ipv6'],
                 $enable_ipv6_label
             )
@@ -819,7 +822,7 @@ class Vultr extends Module
             $fields->fieldRadio(
                 'vultr_enable_ipv6',
                 'disable',
-                $this->Html->ifSet($vars->vultr_enable_ipv6, $this->Html->ifSet($vars->ipv6)) == 'disable',
+                (isset($vars->vultr_enable_ipv6) ? $vars->vultr_enable_ipv6 : ($vars->ipv6 ?? null)) == 'disable',
                 ['id' => 'vultr_disable_ipv6'],
                 $disable_ipv6_label
             )
@@ -859,7 +862,7 @@ class Vultr extends Module
         $hostname->attach(
             $fields->fieldText(
                 'vultr_hostname',
-                $this->Html->ifSet($vars->vultr_hostname, $this->Html->ifSet($vars->hostname)),
+                (isset($vars->vultr_hostname) ? $vars->vultr_hostname : ($vars->hostname ?? null)),
                 ['id' => 'vultr_hostname']
             )
         );
@@ -872,7 +875,7 @@ class Vultr extends Module
             $fields->fieldSelect(
                 'vultr_location',
                 $locations,
-                $this->Html->ifSet($vars->vultr_location, $this->Html->ifSet($vars->location)),
+                (isset($vars->vultr_location) ? $vars->vultr_location : ($vars->location ?? null)),
                 ['id' => 'vultr_location']
             )
         );
@@ -885,7 +888,7 @@ class Vultr extends Module
                 $fields->fieldSelect(
                     'vultr_template',
                     $templates,
-                    $this->Html->ifSet($vars->vultr_template, $this->Html->ifSet($vars->template)),
+                    (isset($vars->vultr_template) ? $vars->vultr_template : ($vars->template ?? null)),
                     ['id' => 'vultr_template']
                 )
             );
@@ -900,7 +903,10 @@ class Vultr extends Module
             $fields->fieldRadio(
                 'vultr_enable_ipv6',
                 'enable',
-                $this->Html->ifSet($vars->vultr_enable_ipv6, $this->Html->ifSet($vars->ipv6, 'enable')) == 'enable',
+                (isset($vars->vultr_enable_ipv6)
+                    ? $vars->vultr_enable_ipv6
+                    : (isset($vars->ipv6) ? $vars->ipv6 : 'enable')
+                ) == 'enable',
                 ['id' => 'vultr_enable_ipv6'],
                 $enable_ipv6_label
             )
@@ -911,7 +917,7 @@ class Vultr extends Module
             $fields->fieldRadio(
                 'vultr_enable_ipv6',
                 'disable',
-                $this->Html->ifSet($vars->vultr_enable_ipv6, $this->Html->ifSet($vars->ipv6)) == 'disable',
+                (isset($vars->vultr_enable_ipv6) ? $vars->vultr_enable_ipv6 : ($vars->ipv6 ?? null)) == 'disable',
                 ['id' => 'vultr_disable_ipv6'],
                 $disable_ipv6_label
             )
@@ -949,7 +955,7 @@ class Vultr extends Module
         $subid->attach(
             $fields->fieldText(
                 'vultr_subid',
-                $this->Html->ifSet($vars->vultr_subid, $this->Html->ifSet($vars->subid)),
+                (isset($vars->vultr_subid) ? $vars->vultr_subid : ($vars->subid ?? null)),
                 ['id' => 'vultr_subid']
             )
         );
@@ -966,7 +972,7 @@ class Vultr extends Module
                 $fields->fieldSelect(
                     'vultr_template',
                     $templates,
-                    $this->Html->ifSet($vars->vultr_template, $this->Html->ifSet($vars->template)),
+                    (isset($vars->vultr_template) ? $vars->vultr_template : ($vars->template ?? null)),
                     ['id' => 'vultr_template']
                 )
             );
@@ -2152,7 +2158,7 @@ class Vultr extends Module
 
                             $data = [
                                 'vultr_subid' => $service_fields->vultr_subid,
-                                'vultr_template' => $this->Html->ifSet($post['template'])
+                                'vultr_template' => (isset($post['template']) ? $post['template'] : null)
                             ];
                             $this->Services->edit($service->id, $data);
 

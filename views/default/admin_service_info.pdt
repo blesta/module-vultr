@@ -9,10 +9,10 @@
         </tr>
         <tr>
             <td></td>
-            <td><?php $this->Html->_($service_fields->vultr_hostname); ?></td>
-            <td><?php $this->Html->_($server_details->os); ?></td>
-            <td><?php $this->Html->_($server_details->location); ?></td>
-            <td><?php $this->Html->_($server_details->main_ip); ?></td>
-            <td><?php $this->Html->_($server_details->default_password);?></td>
+            <td><?php echo (isset($service_fields->vultr_hostname) ? $this->Html->safe($service_fields->vultr_hostname) : null); ?></td>
+            <td><?php echo (isset($server_details->os) ? $this->Html->safe($server_details->os) : null); ?></td>
+            <td><?php echo (isset($server_details->location) ? $this->Html->safe($server_details->location) : null); ?></td>
+            <td><?php echo (isset($server_details->main_ip) ? $this->Html->safe($server_details->main_ip) : null); ?></td>
+            <td><?php echo (isset($server_details->default_password) ? $this->Html->safe($server_details->default_password) : null);?></td>
         </tr>
     </table>
