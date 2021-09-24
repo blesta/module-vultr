@@ -1,4 +1,5 @@
 <?php
+use Blesta\Core\Util\Common\Traits\Container;
 
 require_once dirname(__FILE__) . DIRECTORY_SEPARATOR . 'vultr_response.php';
 
@@ -13,6 +14,9 @@ require_once dirname(__FILE__) . DIRECTORY_SEPARATOR . 'vultr_response.php';
  */
 class VultrApi
 {
+    // Load traits
+    use Container;
+
     /**
      * @var string The api key
      */
@@ -31,6 +35,10 @@ class VultrApi
     public function __construct($api_key)
     {
         $this->api_key = $api_key;
+
+        // Initialize logger
+        $logger = $this->getFromContainer('logger');
+        $this->logger = $logger;
     }
 
     /**
@@ -48,8 +56,14 @@ class VultrApi
         curl_setopt($ch, CURLOPT_TIMEOUT, 20);
         curl_setopt($ch, CURLOPT_FRESH_CONNECT, true);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+
+        if (Configure::get('Blesta.curl_verify_ssl')) {
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+        } else {
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        }
 
         // Set authentication details
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
@@ -84,7 +98,13 @@ class VultrApi
         ];
 
         curl_setopt($ch, CURLOPT_URL, $url . (isset($get) ? '?' . $get : null));
+
         $response = curl_exec($ch);
+
+        if ($response == false) {
+            $this->logger->error(curl_error($ch));
+        }
+
         curl_close($ch);
 
         return new VultrResponse($response);
