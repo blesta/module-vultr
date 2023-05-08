@@ -98,23 +98,23 @@ class Vultr extends Module
                 $(document).ready(function() {
                     // Set whether to show or hide the plans option, depending on the server type
                     $('#vultr_baremetal_plan').closest('li').hide();
-                    $('#vultr_server_plan').closest('li').hide();
+                    $('#vultr_instances_plan').closest('li').hide();
 
-                    if ($('#vultr_server_type').val() == 'server') {
-                        $('#vultr_server_plan').closest('li').show();
+                    if ($('#vultr_instances_type').val() == 'server') {
+                        $('#vultr_instances_plan').closest('li').show();
                         $('#vultr_baremetal_plan').closest('li').hide();
                     } else {
                         $('#vultr_baremetal_plan').closest('li').show();
-                        $('#vultr_server_plan').closest('li').hide();
+                        $('#vultr_instances_plan').closest('li').hide();
                     }
 
-                    $('#vultr_server_type').change(function() {
+                    $('#vultr_instances_type').change(function() {
                         if ($(this).val() == 'server') {
-                            $('#vultr_server_plan').closest('li').show();
+                            $('#vultr_instances_plan').closest('li').show();
                             $('#vultr_baremetal_plan').closest('li').hide();
                         } else {
                             $('#vultr_baremetal_plan').closest('li').show();
-                            $('#vultr_server_plan').closest('li').hide();
+                            $('#vultr_instances_plan').closest('li').hide();
                         }
                     });
 
@@ -166,14 +166,14 @@ class Vultr extends Module
         // Set the Vultr server type as a selectable option
         $server_type = $fields->label(
             Language::_('Vultr.package_fields.server_type', true),
-            'vultr_server_type'
+            'vultr_instances_type'
         );
         $server_type->attach(
             $fields->fieldSelect(
                 'meta[server_type]',
                 $this->getServerTypes(),
                 (isset($vars->meta['server_type']) ? $vars->meta['server_type'] : null),
-                ['id' => 'vultr_server_type']
+                ['id' => 'vultr_instances_type']
             )
         );
         $fields->setField($server_type);
@@ -196,14 +196,14 @@ class Vultr extends Module
         // Set the Vultr server plans as a selectable option
         $server_plan = $fields->label(
             Language::_('Vultr.package_fields.server_plan', true),
-            'vultr_server_plan'
+            'vultr_instances_plan'
         );
         $server_plan->attach(
             $fields->fieldSelect(
                 'meta[server_plan]',
                 $server_plans,
                 (isset($vars->meta['server_plan']) ? $vars->meta['server_plan'] : null),
-                ['id' => 'vultr_server_plan']
+                ['id' => 'vultr_instances_plan']
             )
         );
         $fields->setField($server_plan);
@@ -309,12 +309,26 @@ class Vultr extends Module
         $api->loadCommand('vultr_plans');
 
         $plans_api = new VultrPlans($api);
-        $result = (array) $this->parseResponse($plans_api->listBaremetalPlans());
+        $result = $plans_api->listBaremetalPlans()->response();
 
         $plans = [];
+        foreach ($result->plans_metal ?? [] as $plan) {
+            if (empty($plan->id) || empty($plan->locations)) {
+                continue;
+            }
 
-        foreach ($result as $plan) {
-            $plans[$plan->METALPLANID] = $plan->name;
+            $arch = str_contains($plan->id, 'amd') ? 'AMD' : 'Intel Xeon';
+            $plans[$plan->id] = Language::_(
+                'Vultr.get_baremetal_plans.plan_name',
+                true,
+                $arch,
+                $plan->cpu_model,
+                $plan->cpu_count,
+                $plan->type,
+                $plan->disk_count,
+                $plan->disk,
+                $plan->ram
+            );
         }
 
         return $plans;
@@ -332,12 +346,23 @@ class Vultr extends Module
         $api->loadCommand('vultr_plans');
 
         $plans_api = new VultrPlans($api);
-        $result = (array) $plans_api->listPlans()->response();
+        $result = $plans_api->listPlans()->response();
 
         $plans = [];
+        foreach ($result->plans ?? [] as $plan) {
+            if (empty($plan->id) || empty($plan->locations)) {
+                continue;
+            }
 
-        foreach ($result as $plan) {
-            $plans[$plan->VPSPLANID] = $plan->name;
+            $arch = str_contains($plan->id, 'amd') ? 'AMD' : 'Intel';
+            $plans[$plan->id] = Language::_(
+                'Vultr.get_server_plans.plan_name',
+                true,
+                $arch,
+                $plan->disk,
+                $plan->ram,
+                $plan->vcpu_count
+            );
         }
 
         return $plans;
@@ -360,56 +385,59 @@ class Vultr extends Module
         $os_api = new VultrOs($api);
         $app_api = new VultrApp($api);
 
-        $result_os = (array) $os_api->listOs()->response();
-        $result_app = (array) $app_api->listApps()->response();
+        $result_os = $os_api->listOs()->response();
+        $result_app = $app_api->listApps()->response();
 
-        // Get available apps for an specific service
+        // Get available apps for a specific service
         if (!is_null($service)) {
-            $api->loadCommand('vultr_server');
+            $api->loadCommand('vultr_instances');
             $api->loadCommand('vultr_baremetal');
 
-            $server_api = new VultrServer($api);
+            $server_api = new VultrInstances($api);
             $baremetal_api = new VultrBaremetal($api);
 
             // Get the service fields
             $service_fields = $this->serviceFieldsToObject($service->fields);
 
-            $params = [
-                'SUBID' => $service_fields->vultr_subid
-            ];
-
             if ($package->meta->server_type == 'server') {
-                $result_app_delta = (array) $server_api->appChangeList($params)->response();
+                $params = [
+                    'instance-id' => $service_fields->vultr_subid
+                ];
+                $result_app = $server_api->appChangeList($params)->response()->upgrades;
             } else {
-                $result_app_delta = (array) $baremetal_api->appChangeList($params)->response();
-            }
-
-            if (!empty($result_app_delta)) {
-                $result_app = $result_app_delta;
+                $params = [
+                    'baremetal-id' => $service_fields->vultr_subid
+                ];
+                $result_app = $baremetal_api->appChangeList($params)->response()->upgrades;
             }
         }
 
-        $excluded_os = [159, 164, 180, 186];
+        $excluded_templates = [159, 164, 180, 186];
         $templates = [];
+        foreach ($result_os->os ?? [] as $os) {
+            if (in_array($os->id, $excluded_templates)) {
+                continue;
+            }
 
-        foreach ($result_os as $os) {
-            if (!in_array($os->OSID, $excluded_os)) {
-                if (!$os->windows
-                    || is_null($package)
-                    || ($os->windows && (isset($package->meta->surcharge_templates) ? $package->meta->surcharge_templates : null) == 'allow')
-                ) {
-                    $templates['os-' . $os->OSID] = $os->name . ($os->windows && is_null($package) ? ' (+$16)' : null);
-                }
+            if ($os->family !== 'windows'
+                || is_null($package)
+                || ($os->family == 'windows' && ($package->meta->surcharge_templates ?? null) == 'allow')
+            ) {
+                $templates['os-' . $os->id] = ($os->family == 'windows')
+                    ? Language::_('Vultr.get_templates.paid_template_name', true, $os->name)
+                    : $os->name;
             }
         }
 
-        foreach ($result_app as $app) {
-            if (!$app->surcharge
+        $paid_apps = [35, 36, 38];
+        foreach ($result_app->applications ?? [] as $app) {
+            if (!in_array($app->id, $paid_apps)
                 || is_null($package)
-                || ($app->surcharge && (isset($package->meta->surcharge_templates) ? $package->meta->surcharge_templates : null) == 'allow')
+                || (in_array($app->id, $paid_apps) && ($package->meta->surcharge_templates ?? null) == 'allow')
             ) {
-                $templates['app-' . $app->APPID] = $app->deploy_name
-                    . ($app->surcharge && is_null($package) ? ' (+$' . (int) $app->surcharge . ')' : null);
+                $templates['app-' . $app->id] = in_array($app->id, $paid_apps)
+                    ? Language::_('Vultr.get_templates.paid_template_name', true, $app->name)
+                    : $app->name;
             }
         }
 
@@ -425,29 +453,38 @@ class Vultr extends Module
      */
     private function getLocations($module_row, $package = null)
     {
+        // Fetch the locations results from the cache, if they exist
+        $cache = Cache::fetchCache(
+            'locations',
+            Configure::get('Blesta.company_id') . DS . 'modules' . DS . 'vultr' . DS
+        );
+
+        if ($cache) {
+            return unserialize(base64_decode($cache));
+        }
+
         $api = $this->getApi($module_row->meta->api_key);
         $api->loadCommand('vultr_regions');
 
         $regions_api = new VultrRegions($api);
-        $result = (array) $regions_api->listRegions()->response();
+        $result = $regions_api->listRegions()->response();
 
         $locations = [];
-
-        foreach ($result as $location) {
-            $locations[$location->DCID] = $location->name . ', ' . $location->country . '. ' . $location->continent;
+        foreach ($result->regions ?? [] as $location) {
+            $locations[$location->id] = $location->city . ', ' . $location->country . '. ' . $location->continent . '.';
         }
 
         // Check availability in the locations
         if (!is_null($package)) {
-            foreach ($locations as $dcid => $location) {
+            foreach ($locations as $region_id => $location) {
                 if ($package->meta->server_type == 'server') {
-                    $availability = (array) $regions_api->availabilityVc2(['DCID' => $dcid])->response();
+                    $availability = $regions_api->availabilityVc2(['region-id' => $region_id])->response();
                 } else {
-                    $availability = (array) $regions_api->availabilityBaremetal(['DCID' => $dcid])->response();
+                    $availability = $regions_api->availabilityBaremetal(['region-id' => $region_id])->response();
                 }
 
                 if (empty($availability)) {
-                    unset($locations[$dcid]);
+                    unset($locations[$region_id]);
                 }
 
                 // The Vultr API only allows a maximum of 2 request per second, we need wait
@@ -456,51 +493,22 @@ class Vultr extends Module
             }
         }
 
-        return $locations;
-    }
-
-    /**
-     * Parse the application information by replacing and removing Vultr
-     * apparitions, to return it as a white label information.
-     *
-     * @param mixed $api The vultr api instance
-     * @param stdClass $service A stdClass object representing the current service
-     * @return stdClass An object containing the application details
-     */
-    private function getApplicationDetails($api, $service)
-    {
-        // Get the service fields
-        $service_fields = $this->serviceFieldsToObject($service->fields);
-
-        $params = [
-            'SUBID' => $service_fields->vultr_subid
-        ];
-        $this->log('api.vultr.com|get_app_info', serialize($params), 'input', true);
-        $application_details = $this->parseResponse($api->getAppInfo($params));
-
-        if (isset($application_details->app_info)) {
-            Loader::loadModels($this, ['Companies']);
-
-            $company_id = Configure::get('Blesta.company_id');
-            $company = $this->Companies->get($company_id);
-
-            if ($company) {
-                $string = $application_details->app_info;
-
-                $string = str_replace('Vultr', $company->name, $string);
-                $string = str_replace('www.vultr.com', $company->hostname, $string);
-                $string = str_replace('vultr.com', $company->hostname, $string);
-
-                $footer_pos = strpos($string, 'Read more');
-                $string = substr($string, 0, $footer_pos);
-
-                if (!empty($string)) {
-                    $application_details->app_info = trim($string);
-                }
+        // Save locations in cache
+        if (Configure::get('Caching.on') && is_writable(CACHEDIR)) {
+            try {
+                Cache::writeCache(
+                    'locations',
+                    base64_encode(serialize($locations)),
+                    strtotime(Configure::get('Blesta.cache_length')) - time(),
+                    Configure::get('Blesta.company_id') . DS . 'modules' . DS . 'vultr' . DS
+                );
+            } catch (Exception $e) {
+                // Write to cache failed, so disable caching
+                Configure::set('Caching.on', false);
             }
         }
 
-        return $application_details;
+        return $locations;
     }
 
     /**
@@ -735,7 +743,7 @@ class Vultr extends Module
         Loader::loadHelpers($this, ['Html']);
 
         // Fetch the module row available for this package
-        $module_row = $this->getModuleRow((isset($package->module_row) ? $package->module_row : 0));
+        $module_row = $this->getModuleRow(($package->module_row ?? 0));
 
         // Get the available templates
         $templates = $this->getTemplates($module_row, $package);
@@ -751,7 +759,7 @@ class Vultr extends Module
         $subid->attach(
             $fields->fieldText(
                 'vultr_subid',
-                (isset($vars->vultr_subid) ? $vars->vultr_subid : ($vars->subid ?? null)),
+                ($vars->vultr_subid ?? ($vars->subid ?? null)),
                 ['id' => 'vultr_subid']
             )
         );
@@ -767,7 +775,7 @@ class Vultr extends Module
         $hostname->attach(
             $fields->fieldText(
                 'vultr_hostname',
-                (isset($vars->vultr_hostname) ? $vars->vultr_hostname : ($vars->hostname ?? null)),
+                ($vars->vultr_hostname ?? ($vars->hostname ?? null)),
                 ['id' => 'vultr_hostname']
             )
         );
@@ -780,7 +788,7 @@ class Vultr extends Module
             $fields->fieldSelect(
                 'vultr_location',
                 $locations,
-                (isset($vars->vultr_location) ? $vars->vultr_location : ($vars->location ?? null)),
+                ($vars->vultr_location ?? ($vars->location ?? null)),
                 ['id' => 'vultr_location']
             )
         );
@@ -793,7 +801,7 @@ class Vultr extends Module
                 $fields->fieldSelect(
                     'vultr_template',
                     $templates,
-                    (isset($vars->vultr_template) ? $vars->vultr_template : ($vars->template ?? null)),
+                    ($vars->vultr_template ?? ($vars->template ?? null)),
                     ['id' => 'vultr_template']
                 )
             );
@@ -808,10 +816,7 @@ class Vultr extends Module
             $fields->fieldRadio(
                 'vultr_enable_ipv6',
                 'enable',
-                (isset($vars->vultr_enable_ipv6)
-                    ? $vars->vultr_enable_ipv6
-                    : (isset($vars->ipv6) ? $vars->ipv6 : 'enable')
-                ) == 'enable',
+                ($vars->vultr_enable_ipv6 ?? ($vars->ipv6 ?? 'enable')) == 'enable',
                 ['id' => 'vultr_enable_ipv6'],
                 $enable_ipv6_label
             )
@@ -822,7 +827,7 @@ class Vultr extends Module
             $fields->fieldRadio(
                 'vultr_enable_ipv6',
                 'disable',
-                (isset($vars->vultr_enable_ipv6) ? $vars->vultr_enable_ipv6 : ($vars->ipv6 ?? null)) == 'disable',
+                ($vars->vultr_enable_ipv6 ?? ($vars->ipv6 ?? null)) == 'disable',
                 ['id' => 'vultr_disable_ipv6'],
                 $disable_ipv6_label
             )
@@ -862,7 +867,7 @@ class Vultr extends Module
         $hostname->attach(
             $fields->fieldText(
                 'vultr_hostname',
-                (isset($vars->vultr_hostname) ? $vars->vultr_hostname : ($vars->hostname ?? null)),
+                ($vars->vultr_hostname ?? ($vars->hostname ?? null)),
                 ['id' => 'vultr_hostname']
             )
         );
@@ -875,7 +880,7 @@ class Vultr extends Module
             $fields->fieldSelect(
                 'vultr_location',
                 $locations,
-                (isset($vars->vultr_location) ? $vars->vultr_location : ($vars->location ?? null)),
+                ($vars->vultr_location ?? ($vars->location ?? null)),
                 ['id' => 'vultr_location']
             )
         );
@@ -888,7 +893,7 @@ class Vultr extends Module
                 $fields->fieldSelect(
                     'vultr_template',
                     $templates,
-                    (isset($vars->vultr_template) ? $vars->vultr_template : ($vars->template ?? null)),
+                    ($vars->vultr_template ?? ($vars->template ?? null)),
                     ['id' => 'vultr_template']
                 )
             );
@@ -903,10 +908,7 @@ class Vultr extends Module
             $fields->fieldRadio(
                 'vultr_enable_ipv6',
                 'enable',
-                (isset($vars->vultr_enable_ipv6)
-                    ? $vars->vultr_enable_ipv6
-                    : (isset($vars->ipv6) ? $vars->ipv6 : 'enable')
-                ) == 'enable',
+                ($vars->vultr_enable_ipv6 ?? ($vars->ipv6 ?? 'enable')) == 'enable',
                 ['id' => 'vultr_enable_ipv6'],
                 $enable_ipv6_label
             )
@@ -917,7 +919,7 @@ class Vultr extends Module
             $fields->fieldRadio(
                 'vultr_enable_ipv6',
                 'disable',
-                (isset($vars->vultr_enable_ipv6) ? $vars->vultr_enable_ipv6 : ($vars->ipv6 ?? null)) == 'disable',
+                ($vars->vultr_enable_ipv6 ?? ($vars->ipv6 ?? null)) == 'disable',
                 ['id' => 'vultr_disable_ipv6'],
                 $disable_ipv6_label
             )
@@ -955,7 +957,7 @@ class Vultr extends Module
         $subid->attach(
             $fields->fieldText(
                 'vultr_subid',
-                (isset($vars->vultr_subid) ? $vars->vultr_subid : ($vars->subid ?? null)),
+                ($vars->vultr_subid ?? ($vars->subid ?? null)),
                 ['id' => 'vultr_subid']
             )
         );
@@ -972,7 +974,7 @@ class Vultr extends Module
                 $fields->fieldSelect(
                     'vultr_template',
                     $templates,
-                    (isset($vars->vultr_template) ? $vars->vultr_template : ($vars->template ?? null)),
+                    ($vars->vultr_template ?? ($vars->template ?? null)),
                     ['id' => 'vultr_template']
                 )
             );
@@ -1067,24 +1069,12 @@ class Vultr extends Module
                     'if_set' => true,
                     'rule' => [
                         [$this, 'validateSubID'],
-                        isset($package->meta->server_type) ? $package->meta->server_type : 'server'
+                        $package->meta->server_type ?? 'server'
                     ],
                     'message' => Language::_('Vultr.!error.vultr_subid.valid', true)
                 ]
             ]
         ];
-
-        if ($edit) {
-            // If this is an edit evaluate the Vultr subid
-            $rules['vultr_subid'] = [
-                'valid' => [
-                    'if_set' => true,
-                    'rule' => ['matches', '/^([0-9]+)$/'],
-                    'message' => Language::_('Vultr.!error.vultr_subid.valid', true),
-                    'last' => true
-                ]
-            ];
-        }
 
         return $rules;
     }
@@ -1130,6 +1120,9 @@ class Vultr extends Module
             return;
         }
 
+        // Disallow capital letters in hostname
+        $vars['vultr_hostname'] = strtolower($vars['vultr_hostname']);
+
         // Get service parameters
         $params = $this->getFieldsFromInput((array) $vars, $package);
 
@@ -1140,9 +1133,6 @@ class Vultr extends Module
             return;
         }
 
-        // Disallow capital letters in hostname
-        $vars['vultr_hostname'] = strtolower($vars['vultr_hostname']);
-
         // Only provision the service if 'use_module' is true
         if ($vars['use_module'] == 'true') {
             $this->log('api.vultr.com|create', serialize($params), 'input', true);
@@ -1152,8 +1142,8 @@ class Vultr extends Module
                 $api = $this->getApi($row->meta->api_key);
 
                 if ($package->meta->server_type == 'server') {
-                    $api->loadCommand('vultr_server');
-                    $vultr_api = new VultrServer($api);
+                    $api->loadCommand('vultr_instances');
+                    $vultr_api = new VultrInstances($api);
                 } else {
                     $api->loadCommand('vultr_baremetal');
                     $vultr_api = new VultrBaremetal($api);
@@ -1162,30 +1152,7 @@ class Vultr extends Module
                 if (empty($vars['vultr_subid'])) {
                     // Create the vultr server
                     $result = $this->parseResponse($vultr_api->create($params));
-
-                    // Enable automatic backup
-                    if (isset($vars['configoptions']['enable_backup'])
-                        && $vars['configoptions']['enable_backup'] == 'enable'
-                    ) {
-                        // Only virtual machines supports automatic backups
-                        if ($package->meta->server_type == 'server') {
-                            $params = [
-                                'SUBID' => $result->SUBID
-                            ];
-                            $this->log('api.vultr.com|backup_enable', serialize($params), 'input', true);
-                            $this->parseResponse($vultr_api->backupEnable($params));
-
-                            // Updated backups to be daily
-                            $params['cron_type'] = 'daily';
-                            $this->log('api.vultr.com|backup_daily', serialize($params), 'input', true);
-                            $this->parseResponse($vultr_api->backupSetSchedule($params));
-                        }
-                    }
-                } else {
-                    $servers = $vultr_api->listServers()->response();
-                    if (!isset($servers->{$vars['vultr_subid']})) {
-                        $this->Input->setErrors(['api' => ['internal' => Language::_('Vultr.!error.invalid_vultr_subid', true)]]);
-                    }
+                    $server = $result->instance ??  $result->bare_metal ?? (object) [];
                 }
             } catch (Exception $e) {
                 $this->Input->setErrors(
@@ -1202,29 +1169,32 @@ class Vultr extends Module
         return [
             [
                 'key' => 'vultr_hostname',
-                'value' => isset($vars['vultr_hostname']) ? $vars['vultr_hostname'] : null,
+                'value' => $vars['vultr_hostname'] ?? null,
                 'encrypted' => 0
             ],
             [
                 'key' => 'vultr_template',
-                'value' => isset($vars['vultr_template']) ? $vars['vultr_template'] : null,
+                'value' => $vars['vultr_template'] ?? null,
                 'encrypted' => 0
             ],
             [
                 'key' => 'vultr_location',
-                'value' => isset($vars['vultr_location']) ? $vars['vultr_location'] : null,
+                'value' => $vars['vultr_location'] ?? null,
                 'encrypted' => 0
             ],
             [
                 'key' => 'vultr_enable_ipv6',
-                'value' => isset($vars['vultr_enable_ipv6']) ? $vars['vultr_enable_ipv6'] : null,
+                'value' => $vars['vultr_enable_ipv6'] ?? null,
                 'encrypted' => 0
             ],
             [
+                'key' => 'vultr_password',
+                'value' => $server->default_password ?? ($vars['vultr_password'] ?? null),
+                'encrypted' => 1
+            ],
+            [
                 'key' => 'vultr_subid',
-                'value' => isset($result->SUBID)
-                    ? $result->SUBID
-                    : (isset($vars['vultr_subid']) ? $vars['vultr_subid'] : null),
+                'value' => $server->id ?? ($vars['vultr_subid'] ?? null),
                 'encrypted' => 0
             ],
             [
@@ -1274,6 +1244,11 @@ class Vultr extends Module
         // Get the service fields
         $service_fields = $this->serviceFieldsToObject($service->fields);
 
+        // Disallow capital letters in hostname
+        if (isset($vars['vultr_hostname'])) {
+            $vars['vultr_hostname'] = strtolower($vars['vultr_hostname']);
+        }
+
         // Get service parameters
         $params = $this->getFieldsFromInput((array) $vars, $package);
 
@@ -1282,11 +1257,6 @@ class Vultr extends Module
 
         if ($this->Input->errors()) {
             return;
-        }
-
-        // Disallow capital letters in hostname
-        if (isset($vars['vultr_hostname'])) {
-            $vars['vultr_hostname'] = strtolower($vars['vultr_hostname']);
         }
 
         // Check for fields that changed
@@ -1303,8 +1273,8 @@ class Vultr extends Module
             $api = $this->getApi($row->meta->api_key);
 
             if ($package->meta->server_type == 'server') {
-                $api->loadCommand('vultr_server');
-                $vultr_api = new VultrServer($api);
+                $api->loadCommand('vultr_instances');
+                $vultr_api = new VultrInstances($api);
             } else {
                 $api->loadCommand('vultr_baremetal');
                 $vultr_api = new VultrBaremetal($api);
@@ -1316,32 +1286,48 @@ class Vultr extends Module
                 if ($package->meta->set_template == 'admin') {
                     $template = $package->meta->template;
                 } elseif ($package->meta->set_template == 'client') {
-                    $template = isset($delta['vultr_template']) ? $delta['vultr_template'] : null;
+                    $template = $delta['vultr_template'] ?? null;
                 }
 
                 $template = explode('-', $template, 2);
 
                 if (isset($template[0]) && $template[0] == 'os') {
-                    $osid = isset($template[1]) ? $template[1] : null;
+                    $osid = $template[1] ?? null;
                     $appid = null;
                 } else {
                     $osid = 186;
-                    $appid = isset($template[1]) ? $template[1] : null;
+                    $appid = $template[1] ?? null;
                 }
 
                 // Change the server template
                 if (is_null($appid)) {
-                    $params = [
-                        'SUBID' => $vars['vultr_subid'],
-                        'OSID' => $osid
-                    ];
+                    if ($package->meta->server_type == 'server') {
+                        $params = [
+                            'instance-id' => $vars['vultr_subid'],
+                            'os_id' => $osid
+                        ];
+                    } else {
+                        $params = [
+                            'baremetal-id' => $vars['vultr_subid'],
+                            'os_id' => $osid
+                        ];
+                    }
+
                     $this->log('api.vultr.com|os_change', serialize($params), 'input', true);
                     $result = $this->parseResponse($vultr_api->osChange($params));
                 } else {
-                    $params = [
-                        'SUBID' => $vars['vultr_subid'],
-                        'APPID' => $appid
-                    ];
+                    if ($package->meta->server_type == 'server') {
+                        $params = [
+                            'instance-id' => $vars['vultr_subid'],
+                            'app_id' => $appid
+                        ];
+                    } else {
+                        $params = [
+                            'baremetal-id' => $vars['vultr_subid'],
+                            'app_id' => $appid
+                        ];
+                    }
+
                     $this->log('api.vultr.com|app_change', serialize($params), 'input', true);
                     $result = $this->parseResponse($vultr_api->appChange($params));
                 }
@@ -1363,13 +1349,13 @@ class Vultr extends Module
                 ) {
                     // Enable daily backups
                     $params = [
-                        'SUBID' => $service_fields->vultr_subid
+                        'instance-id' => $service_fields->vultr_subid
                     ];
                     $this->log('api.vultr.com|backup_enable', serialize($params), 'input', true);
                     $this->parseResponse($vultr_api->backupEnable($params));
 
                     // Updated backups to be daily
-                    $params['cron_type'] = 'daily';
+                    $params['type'] = 'daily';
                     $this->log('api.vultr.com|backup_daily', serialize($params), 'input', true);
                     $this->parseResponse($vultr_api->backupSetSchedule($params));
                 } elseif ($vars['configoptions']['enable_backup'] != 'enable'
@@ -1377,7 +1363,7 @@ class Vultr extends Module
                 ) {
                     // Disable daily backups
                     $params = [
-                        'SUBID' => $service_fields->vultr_subid
+                        'instance-id' => $service_fields->vultr_subid
                     ];
                     $this->log('api.vultr.com|backup_disable', serialize($params), 'input', true);
                     $this->parseResponse($vultr_api->backupDisable($params));
@@ -1438,22 +1424,21 @@ class Vultr extends Module
         if ($row) {
             $api = $this->getApi($row->meta->api_key);
 
-            if ($package->meta->server_type == 'server') {
-                $api->loadCommand('vultr_server');
-                $suspend_api = new VultrServer($api);
-            } else {
-                $api->loadCommand('vultr_baremetal');
-                $suspend_api = new VultrBaremetal($api);
-            }
-
             // Get the service fields
             $service_fields = $this->serviceFieldsToObject($service->fields);
 
-            $params = [
-                'SUBID' => $service_fields->vultr_subid
-            ];
+            if ($package->meta->server_type == 'server') {
+                $api->loadCommand('vultr_instances');
+                $instances_api = new VultrInstances($api);
+                $params = ['instance_ids' => [$service_fields->vultr_subid]];
+            } else {
+                $api->loadCommand('vultr_baremetal');
+                $instances_api = new VultrBaremetal($api);
+                $params = ['baremetal_ids' => [$service_fields->vultr_subid]];
+            }
+
             $this->log('api.vultr.com|halt', serialize($params), 'input', true);
-            $suspend_api->halt($params);
+            $this->parseResponse($instances_api->halt($params));
         }
 
         return null;
@@ -1485,22 +1470,21 @@ class Vultr extends Module
         if ($row) {
             $api = $this->getApi($row->meta->api_key);
 
-            if ($package->meta->server_type == 'server') {
-                $api->loadCommand('vultr_server');
-                $suspend_api = new VultrServer($api);
-            } else {
-                $api->loadCommand('vultr_baremetal');
-                $suspend_api = new VultrBaremetal($api);
-            }
-
             // Get the service fields
             $service_fields = $this->serviceFieldsToObject($service->fields);
 
-            $params = [
-                'SUBID' => $service_fields->vultr_subid
-            ];
+            if ($package->meta->server_type == 'server') {
+                $api->loadCommand('vultr_instances');
+                $instances_api = new VultrInstances($api);
+                $params = ['instance_ids' => [$service_fields->vultr_subid]];
+            } else {
+                $api->loadCommand('vultr_baremetal');
+                $instances_api = new VultrBaremetal($api);
+                $params = ['baremetal_ids' => [$service_fields->vultr_subid]];
+            }
+
             $this->log('api.vultr.com|reboot', serialize($params), 'input', true);
-            $suspend_api->reboot($params);
+            $this->parseResponse($instances_api->reboot($params));
         }
 
         return null;
@@ -1532,22 +1516,21 @@ class Vultr extends Module
         if ($row) {
             $api = $this->getApi($row->meta->api_key);
 
-            if ($package->meta->server_type == 'server') {
-                $api->loadCommand('vultr_server');
-                $suspend_api = new VultrServer($api);
-            } else {
-                $api->loadCommand('vultr_baremetal');
-                $suspend_api = new VultrBaremetal($api);
-            }
-
             // Get the service fields
             $service_fields = $this->serviceFieldsToObject($service->fields);
 
-            $params = [
-                'SUBID' => $service_fields->vultr_subid
-            ];
+            if ($package->meta->server_type == 'server') {
+                $api->loadCommand('vultr_instances');
+                $instances_api = new VultrInstances($api);
+                $params = ['instance-id' => $service_fields->vultr_subid];
+            } else {
+                $api->loadCommand('vultr_baremetal');
+                $instances_api = new VultrBaremetal($api);
+                $params = ['baremetal-id' => $service_fields->vultr_subid];
+            }
+
             $this->log('api.vultr.com|destroy', serialize($params), 'input', true);
-            $suspend_api->destroy($params);
+            $this->parseResponse($instances_api->destroy($params));
         }
 
         return null;
@@ -1582,25 +1565,25 @@ class Vultr extends Module
         // Get the module row
         $row = $this->getModuleRow();
 
+        if ($package_from->meta->server_type !== 'server') {
+            return null;
+        }
+
         if ($row) {
             $api = $this->getApi($row->meta->api_key);
-
-            if ($package_from->meta->server_type == 'server') {
-                $api->loadCommand('vultr_server');
-                $vultr_api = new VultrServer($api);
-            }
+            $api->loadCommand('vultr_instances');
+            $vultr_api = new VultrInstances($api);
 
             // Get the service fields
             $service_fields = $this->serviceFieldsToObject($service->fields);
 
-            if ($package_from->meta->server_type == 'server') {
-                $params = [
-                    'SUBID' => $service_fields->vultr_subid,
-                    'VPSPLANID' => $package_to->meta->server_plan
-                ];
-                $this->log('api.vultr.com|upgrade_plan', serialize($params), 'input', true);
-                $vultr_api->upgradePlan($params);
-            }
+            // Upgrade plan
+            $params = [
+                'instance-id' => $service_fields->vultr_subid,
+                'plan' => $package_to->meta->server_plan
+            ];
+            $this->log('api.vultr.com|upgrade_plan', serialize($params), 'input', true);
+            $this->parseResponse($vultr_api->upgradePlan($params));
         }
 
         return null;
@@ -1626,23 +1609,23 @@ class Vultr extends Module
         $api = $this->getApi($row->meta->api_key);
 
         if ($package->meta->server_type == 'server') {
-            $api->loadCommand('vultr_server');
-            $vultr_api = new VultrServer($api);
+            $api->loadCommand('vultr_instances');
+            $vultr_api = new VultrInstances($api);
         } else {
             $api->loadCommand('vultr_baremetal');
             $vultr_api = new VultrBaremetal($api);
         }
 
         // Get the server details
-        $params = [
-            'SUBID' => $service_fields->vultr_subid
-        ];
-        $this->log('api.vultr.com|list', serialize($params), 'input', true);
-
+        $this->log('api.vultr.com|get', serialize($service_fields), 'input', true);
         if ($package->meta->server_type == 'server') {
-            $server_details = $this->parseResponse($vultr_api->listServers($params));
+            $params = ['instance-id' => $service_fields->vultr_subid];
+            $response = $this->parseResponse($vultr_api->get($params));
+            $server_details = $response->instance ?? (object) [];
         } else {
-            $server_details = $this->parseResponse($vultr_api->listBaremetal($params));
+            $params = ['baremetal-id' => $service_fields->vultr_subid];
+            $response = $this->parseResponse($vultr_api->get($params));
+            $server_details = $response->bare_metal ?? (object) [];
         }
 
         // Load the view into this object, so helpers can be automatically added to the view
@@ -1653,11 +1636,15 @@ class Vultr extends Module
         // Load the helpers required for this view
         Loader::loadHelpers($this, ['Form', 'Html']);
 
+        // Set locations
+        $locations = $this->getLocations($row, $package);
+        $this->view->set('locations', $locations);
+
         $this->view->set('module_row', $row);
         $this->view->set('package', $package);
         $this->view->set('service', $service);
         $this->view->set('service_fields', $service_fields);
-        $this->view->set('server_details', (isset($server_details) ? $server_details : new stdClass()));
+        $this->view->set('server_details', ($server_details ?? new stdClass()));
 
         return $this->view->fetch();
     }
@@ -1682,23 +1669,23 @@ class Vultr extends Module
         $api = $this->getApi($row->meta->api_key);
 
         if ($package->meta->server_type == 'server') {
-            $api->loadCommand('vultr_server');
-            $vultr_api = new VultrServer($api);
+            $api->loadCommand('vultr_instances');
+            $vultr_api = new VultrInstances($api);
         } else {
             $api->loadCommand('vultr_baremetal');
             $vultr_api = new VultrBaremetal($api);
         }
 
         // Get the server details
-        $params = [
-            'SUBID' => $service_fields->vultr_subid
-        ];
-        $this->log('api.vultr.com|list', serialize($params), 'input', true);
-
+        $this->log('api.vultr.com|get', serialize($service_fields), 'input', true);
         if ($package->meta->server_type == 'server') {
-            $server_details = $this->parseResponse($vultr_api->listServers($params));
+            $params = ['instance-id' => $service_fields->vultr_subid];
+            $response = $this->parseResponse($vultr_api->get($params));
+            $server_details = $response->instance ?? (object) [];
         } else {
-            $server_details = $this->parseResponse($vultr_api->listBaremetal($params));
+            $params = ['baremetal-id' => $service_fields->vultr_subid];
+            $response = $this->parseResponse($vultr_api->get($params));
+            $server_details = $response->bare_metal ?? (object) [];
         }
 
         // Load the view into this object, so helpers can be automatically added to the view
@@ -1709,11 +1696,15 @@ class Vultr extends Module
         // Load the helpers required for this view
         Loader::loadHelpers($this, ['Form', 'Html']);
 
+        // Set locations
+        $locations = $this->getLocations($row, $package);
+        $this->view->set('locations', $locations);
+
         $this->view->set('module_row', $row);
         $this->view->set('package', $package);
         $this->view->set('service', $service);
         $this->view->set('service_fields', $service_fields);
-        $this->view->set('server_details', (isset($server_details) ? $server_details : new stdClass()));
+        $this->view->set('server_details', ($server_details ?? new stdClass()));
 
         return $this->view->fetch();
     }
@@ -1746,58 +1737,8 @@ class Vultr extends Module
      */
     public function tabStats($package, $service, array $get = null, array $post = null, array $files = null)
     {
-        // Get module row
-        $row = $this->getModuleRow();
-
-        // Set the current view
-        $this->view = new View('tab_stats', 'default');
-        $this->view->base_uri = $this->base_uri;
-
-        // Load the helpers required for this view
-        Loader::loadHelpers($this, ['Form', 'Html']);
-
-        // Get the service fields
-        $service_fields = $this->serviceFieldsToObject($service->fields);
-
-        // Initialize the Vultr API
-        $api = $this->getApi($row->meta->api_key);
-
-        if ($package->meta->server_type == 'server') {
-            $api->loadCommand('vultr_server');
-            $vultr_api = new VultrServer($api);
-        } else {
-            $api->loadCommand('vultr_baremetal');
-            $vultr_api = new VultrBaremetal($api);
-        }
-
-        // Get the server details
-        $params = [
-            'SUBID' => $service_fields->vultr_subid
-        ];
-        $this->log('api.vultr.com|list', serialize($params), 'input', true);
-
-        if ($package->meta->server_type == 'server') {
-            $server_details = (array) $this->parseResponse($vultr_api->listServers($params));
-        } else {
-            $server_details = (array) $this->parseResponse($vultr_api->listBaremetal($params));
-        }
-
-        // Get application details
-        $application_details = new stdClass();
-        if (isset($server_details['os']) && trim($server_details['os']) == 'Application') {
-            $application_details = $this->getApplicationDetails($vultr_api, $service);
-        }
-
-        $this->view->set('module_row', $row);
-        $this->view->set('package', $package);
-        $this->view->set('service', $service);
-        $this->view->set('service_fields', $service_fields);
-        $this->view->set('server_details', $server_details);
-        $this->view->set('application_details', $application_details);
-
-        $this->view->setDefaultView('components' . DS . 'modules' . DS . 'vultr' . DS);
-
-        return $this->view->fetch();
+        // Get stats tab
+        return $this->getTabStats($package, $service, $post);
     }
 
     /**
@@ -1828,69 +1769,8 @@ class Vultr extends Module
      */
     public function tabBackups($package, $service, array $get = null, array $post = null, array $files = null)
     {
-        // Get module row
-        $row = $this->getModuleRow();
-
-        // Set the current view
-        $this->view = new View('tab_backups', 'default');
-        $this->view->base_uri = $this->base_uri;
-
-        // Load the helpers required for this view
-        Loader::loadHelpers($this, ['Form', 'Html']);
-
-        // Get the service fields
-        $service_fields = $this->serviceFieldsToObject($service->fields);
-
-        // Get the service configurable options
-        $service_options = $this->serviceOptionsToObject($service->options);
-
-        // Initialize the Vultr API
-        $api = $this->getApi($row->meta->api_key);
-        $api->loadCommand('vultr_server');
-        $api->loadCommand('vultr_backup');
-
-        $server_api = new VultrServer($api);
-        $backup_api = new VultrBackup($api);
-
-        // Perform actions
-        if (!empty($post)) {
-            switch ($post['action']) {
-                case 'schedule':
-                    //
-                    // TODO: Add the ability of modifying the backup schedule.
-                    //
-                case 'restore':
-                    $params = [
-                        'SUBID' => $service_fields->vultr_subid,
-                        'BACKUPID' => $this->Html->safe($post['backupid'])
-                    ];
-                    $server_api->restoreBackup($params);
-
-                    $vars = (object) $post;
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        // Get server backups
-        $params = [
-            'SUBID' => $service_fields->vultr_subid
-        ];
-        $this->log('api.vultr.com|list', serialize($params), 'input', true);
-        $backups = (array) $this->parseResponse($backup_api->listBackups($params));
-
-        $this->view->set('module_row', $row);
-        $this->view->set('package', $package);
-        $this->view->set('service', $service);
-        $this->view->set('service_fields', $service_fields);
-        $this->view->set('service_options', $service_options);
-        $this->view->set('backups', $backups);
-        $this->view->set('vars', (isset($vars) ? $vars : new stdClass()));
-
-        $this->view->setDefaultView('components' . DS . 'modules' . DS . 'vultr' . DS);
-
-        return $this->view->fetch();
+        // Get backups tab
+        return $this->getBackupsSnapshots($package, $service, $post);
     }
 
     /**
@@ -1921,58 +1801,8 @@ class Vultr extends Module
      */
     public function tabClientStats($package, $service, array $get = null, array $post = null, array $files = null)
     {
-        // Get module row
-        $row = $this->getModuleRow();
-
-        // Set the current view
-        $this->view = new View('tab_client_stats', 'default');
-        $this->view->base_uri = $this->base_uri;
-
-        // Load the helpers required for this view
-        Loader::loadHelpers($this, ['Form', 'Html']);
-
-        // Get the service fields
-        $service_fields = $this->serviceFieldsToObject($service->fields);
-
-        // Initialize the Vultr API
-        $api = $this->getApi($row->meta->api_key);
-
-        if ($package->meta->server_type == 'server') {
-            $api->loadCommand('vultr_server');
-            $vultr_api = new VultrServer($api);
-        } else {
-            $api->loadCommand('vultr_baremetal');
-            $vultr_api = new VultrBaremetal($api);
-        }
-
-        // Get the server details
-        $params = [
-            'SUBID' => $service_fields->vultr_subid
-        ];
-        $this->log('api.vultr.com|list', serialize($params), 'input', true);
-
-        if ($package->meta->server_type == 'server') {
-            $server_details = (array) $this->parseResponse($vultr_api->listServers($params));
-        } else {
-            $server_details = (array) $this->parseResponse($vultr_api->listBaremetal($params));
-        }
-
-        // Get application details
-        $application_details = new stdClass();
-        if (isset($server_details['os']) && trim($server_details['os']) == 'Application') {
-            $application_details = $this->getApplicationDetails($vultr_api, $service);
-        }
-
-        $this->view->set('module_row', $row);
-        $this->view->set('package', $package);
-        $this->view->set('service', $service);
-        $this->view->set('service_fields', $service_fields);
-        $this->view->set('server_details', $server_details);
-        $this->view->set('application_details', $application_details);
-
-        $this->view->setDefaultView('components' . DS . 'modules' . DS . 'vultr' . DS);
-
-        return $this->view->fetch();
+        // Get stats tab
+        return $this->getTabStats($package, $service, $post, true);
     }
 
     /**
@@ -2003,69 +1833,8 @@ class Vultr extends Module
      */
     public function tabClientBackups($package, $service, array $get = null, array $post = null, array $files = null)
     {
-        // Get module row
-        $row = $this->getModuleRow();
-
-        // Set the current view
-        $this->view = new View('tab_client_backups', 'default');
-        $this->view->base_uri = $this->base_uri;
-
-        // Load the helpers required for this view
-        Loader::loadHelpers($this, ['Form', 'Html']);
-
-        // Get the service fields
-        $service_fields = $this->serviceFieldsToObject($service->fields);
-
-        // Get the service configurable options
-        $service_options = $this->serviceOptionsToObject($service->options);
-
-        // Initialize the Vultr API
-        $api = $this->getApi($row->meta->api_key);
-        $api->loadCommand('vultr_server');
-        $api->loadCommand('vultr_backup');
-
-        $server_api = new VultrServer($api);
-        $backup_api = new VultrBackup($api);
-
-        // Perform actions
-        if (!empty($post)) {
-            switch ($post['action']) {
-                case 'schedule':
-                    //
-                    // TODO: Add the ability of modifying the backup schedule.
-                    //
-                case 'restore':
-                    $params = [
-                        'SUBID' => $service_fields->vultr_subid,
-                        'BACKUPID' => $this->Html->safe($post['backupid'])
-                    ];
-                    $server_api->restoreBackup($params);
-
-                    $vars = (object) $post;
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        // Get server backups
-        $params = [
-            'SUBID' => $service_fields->vultr_subid
-        ];
-        $this->log('api.vultr.com|list', serialize($params), 'input', true);
-        $backups = (array) $this->parseResponse($backup_api->listBackups($params));
-
-        $this->view->set('module_row', $row);
-        $this->view->set('package', $package);
-        $this->view->set('service', $service);
-        $this->view->set('service_fields', $service_fields);
-        $this->view->set('service_options', $service_options);
-        $this->view->set('backups', $backups);
-        $this->view->set('vars', (isset($vars) ? $vars : new stdClass()));
-
-        $this->view->setDefaultView('components' . DS . 'modules' . DS . 'vultr' . DS);
-
-        return $this->view->fetch();
+        // Get backups tab
+        return $this->getTabBackups($package, $service, $post, true);
     }
 
     /**
@@ -2097,13 +1866,16 @@ class Vultr extends Module
 
         // Initialize the Vultr API
         $api = $this->getApi($row->meta->api_key);
+        $instance_key = '';
 
         if ($package->meta->server_type == 'server') {
-            $api->loadCommand('vultr_server');
-            $vultr_api = new VultrServer($api);
+            $api->loadCommand('vultr_instances');
+            $vultr_api = new VultrInstances($api);
+            $instance_key = 'instance-id';
         } else {
             $api->loadCommand('vultr_baremetal');
             $vultr_api = new VultrBaremetal($api);
+            $instance_key = 'baremetal-id';
         }
 
         if ($package->meta->server_type == 'server') {
@@ -2128,28 +1900,28 @@ class Vultr extends Module
             } else {
                 switch ($post['action']) {
                     case 'restart':
+                    case 'start':
                         $params = [
-                            'SUBID' => $service_fields->vultr_subid
+                            $instance_key => $service_fields->vultr_subid
                         ];
                         $vultr_api->reboot($params);
                         break;
                     case 'stop':
                         $params = [
-                            'SUBID' => $service_fields->vultr_subid
+                            $instance_key => $service_fields->vultr_subid
                         ];
                         $vultr_api->halt($params);
                         break;
-                    case 'start':
-                        $params = [
-                            'SUBID' => $service_fields->vultr_subid
-                        ];
-                        $vultr_api->reboot($params);
-                        break;
                     case 'reinstall':
                         $params = [
-                            'SUBID' => $service_fields->vultr_subid,
+                            $instance_key => $service_fields->vultr_subid,
                             'hostname' => $service_fields->vultr_hostname
                         ];
+
+                        if ($package->meta->server_type !== 'server') {
+                            unset($params['hostname']);
+                        }
+
                         $vultr_api->reinstall($params);
                         break;
                     case 'change_template':
@@ -2158,7 +1930,7 @@ class Vultr extends Module
 
                             $data = [
                                 'vultr_subid' => $service_fields->vultr_subid,
-                                'vultr_template' => (isset($post['template']) ? $post['template'] : null)
+                                'vultr_template' => ($post['template'] ?? null)
                             ];
                             $this->Services->edit($service->id, $data);
 
@@ -2169,11 +1941,13 @@ class Vultr extends Module
                         }
                         break;
                     case 'enable_ipv6':
-                        $params = [
-                            'SUBID' => $service_fields->vultr_subid
-                        ];
-                        $this->log('api.vultr.com|ipv6Enable', serialize($params), 'input', true);
-                        $this->parseResponse($vultr_api->ipv6Enable($params));
+                        if ($package->meta->server_type == 'server') {
+                            $params = [
+                                $instance_key => $service_fields->vultr_subid
+                            ];
+                            $this->log('api.vultr.com|ipv6Enable', serialize($params), 'input', true);
+                            $this->parseResponse($vultr_api->ipv6Enable($params));
+                        }
                         break;
                     default:
                         break;
@@ -2183,30 +1957,16 @@ class Vultr extends Module
 
         // Get the server details
         $params = [
-            'SUBID' => $service_fields->vultr_subid
+            $instance_key => $service_fields->vultr_subid
         ];
         $this->log('api.vultr.com|list', serialize($params), 'input', true);
 
         if ($package->meta->server_type == 'server') {
-            $server_details = $this->parseResponse($vultr_api->listServers($params));
+            $response = $this->parseResponse($vultr_api->get($params));
+            $server_details = $response->instance ?? (object) [];
         } else {
-            $server_details = $this->parseResponse($vultr_api->listBaremetal($params));
-        }
-
-        // Get a list of ipv6 addresses currently assigned to the server
-        $ip_list = null;
-        if ($service_fields->vultr_enable_ipv6 == 'enable') {
-            // Save the current list of errors
-            $errors = $this->Input->errors();
-            $this->log('api.vultr.com|listIpv6', serialize($params), 'input', true);
-            $ip_list = $this->parseResponse($vultr_api->listIpv6($params));
-
-            // Ignore any errors set by this call, it probably just means there are no ipv6 addresses currently
-            // assigned to the server, which is fine
-            if ($errors != $this->Input->errors()) {
-                // Reset errors to what they were before the ipv6 call
-                $this->Input->setErrors($errors ? $errors : []);
-            }
+            $response = $this->parseResponse($vultr_api->get($params));
+            $server_details = $response->bare_metal ?? (object) [];
         }
 
         $this->view->set('module_row', $row);
@@ -2214,13 +1974,72 @@ class Vultr extends Module
         $this->view->set('service', $service);
         $this->view->set('service_fields', $service_fields);
         $this->view->set('templates', $templates);
-        $this->view->set('server_details', (isset($server_details) ? $server_details : new stdClass()));
-        $this->view->set(
-            'ipv6_enablable',
-            $service_fields->vultr_enable_ipv6
-            && (!isset($ip_list->{$service_fields->vultr_subid}) || empty($ip_list->{$service_fields->vultr_subid}))
-        );
-        $this->view->set('vars', (isset($vars) ? $vars : new stdClass()));
+        $this->view->set('ipv6_enablable', !$service_fields->vultr_enable_ipv6 && $package->meta->server_type == 'server');
+        $this->view->set('server_details', ($server_details ?? new stdClass()));
+        $this->view->set('vars', ($vars ?? new stdClass()));
+
+        $this->view->setDefaultView('components' . DS . 'modules' . DS . 'vultr' . DS);
+
+        return $this->view->fetch();
+    }
+
+    /**
+     * Stats (Admin or Client) tab.
+     *
+     * @param stdClass $package A stdClass object representing the current package
+     * @param stdClass $service A stdClass object representing the current service
+     * @param array $post Any POST parameters
+     * @param bool $client Whether to use the client view template
+     * @return string The string representing the contents of this tab
+     */
+    private function getTabStats($package, $service, array $post = null, $client = false)
+    {
+        // Get module row
+        $row = $this->getModuleRow();
+
+        // Set the current view
+        $this->view = new View($client ? 'tab_client_stats' : 'tab_stats', 'default');
+        $this->view->base_uri = $this->base_uri;
+
+        // Load the helpers required for this view
+        Loader::loadHelpers($this, ['Form', 'Html']);
+
+        // Get the service fields
+        $service_fields = $this->serviceFieldsToObject($service->fields);
+
+        // Initialize the Vultr API
+        $api = $this->getApi($row->meta->api_key);
+        $instance_key = '';
+
+        if ($package->meta->server_type == 'server') {
+            $api->loadCommand('vultr_instances');
+            $vultr_api = new VultrInstances($api);
+            $instance_key = 'instance-id';
+        } else {
+            $api->loadCommand('vultr_baremetal');
+            $vultr_api = new VultrBaremetal($api);
+            $instance_key = 'baremetal-id';
+        }
+
+        // Get the server details
+        $params = [
+            $instance_key => $service_fields->vultr_subid
+        ];
+        $this->log('api.vultr.com|list', serialize($params), 'input', true);
+
+        if ($package->meta->server_type == 'server') {
+            $response = $this->parseResponse($vultr_api->get($params));
+            $server_details = $response->instance ?? (object) [];
+        } else {
+            $response = $this->parseResponse($vultr_api->get($params));
+            $server_details = $response->bare_metal ?? (object) [];
+        }
+
+        $this->view->set('module_row', $row);
+        $this->view->set('package', $package);
+        $this->view->set('service', $service);
+        $this->view->set('service_fields', $service_fields);
+        $this->view->set('server_details', $server_details);
 
         $this->view->setDefaultView('components' . DS . 'modules' . DS . 'vultr' . DS);
 
@@ -2253,10 +2072,10 @@ class Vultr extends Module
 
         // Initialize the Vultr API
         $api = $this->getApi($row->meta->api_key);
-        $api->loadCommand('vultr_server');
+        $api->loadCommand('vultr_instances');
         $api->loadCommand('vultr_snapshot');
 
-        $server_api = new VultrServer($api);
+        $server_api = new VultrInstances($api);
         $snapshot_api = new VultrSnapshot($api);
 
         // Perform actions
@@ -2264,15 +2083,15 @@ class Vultr extends Module
             switch ($post['action']) {
                 case 'create':
                     $params = [
-                        'SUBID' => $service_fields->vultr_subid,
+                        'instance_id' => $service_fields->vultr_subid,
                         'description' => $this->Html->safe($post['description'])
                     ];
                     $result = $this->parseResponse($snapshot_api->create($params));
 
-                    if (isset($result->SNAPSHOTID)) {
+                    if (isset($result->snapshot->id)) {
                         Loader::loadModels($this, ['Services']);
                         $service_fields->vultr_snapshots = $service_fields->vultr_snapshots + [
-                            $result->SNAPSHOTID => $this->Html->safe($post['description'])
+                            $result->snapshot->id => $this->Html->safe($post['description'])
                         ];
                         $data = [
                             'vultr_snapshots' => $service_fields->vultr_snapshots
@@ -2287,7 +2106,7 @@ class Vultr extends Module
                     break;
                 case 'remove':
                     $params = [
-                        'SNAPSHOTID' => $this->Html->safe($post['snapshotid'])
+                        'snapshot-id' => $this->Html->safe($post['snapshotid'])
                     ];
                     $this->parseResponse($snapshot_api->destroy($params));
 
@@ -2306,10 +2125,10 @@ class Vultr extends Module
                     break;
                 case 'restore':
                     $params = [
-                        'SUBID' => $service_fields->vultr_subid,
-                        'SNAPSHOTID' => $this->Html->safe($post['snapshotid'])
+                        'instance-id' => $service_fields->vultr_subid,
+                        'snapshot_id' => $this->Html->safe($post['snapshotid'])
                     ];
-                    $server_api->restoreSnapshot($params);
+                    $this->parseResponse($server_api->restoreSnapshot($params));
 
                     $vars = (object) $post;
                     break;
@@ -2333,8 +2152,84 @@ class Vultr extends Module
         $this->view->set('package', $package);
         $this->view->set('service', $service);
         $this->view->set('service_fields', $service_fields);
-        $this->view->set('snapshots', (isset($snapshots) ? $snapshots : []));
-        $this->view->set('vars', (isset($vars) ? $vars : new stdClass()));
+        $this->view->set('snapshots', ($snapshots ?? []));
+        $this->view->set('vars', ($vars ?? new stdClass()));
+
+        $this->view->setDefaultView('components' . DS . 'modules' . DS . 'vultr' . DS);
+
+        return $this->view->fetch();
+    }
+
+    /**
+     * Backups (Admin or Client) tab.
+     *
+     * @param stdClass $package A stdClass object representing the current package
+     * @param stdClass $service A stdClass object representing the current service
+     * @param array $post Any POST parameters
+     * @param bool $client Whether to use the client view template
+     * @return string The string representing the contents of this tab
+     */
+    private function getTabBackups($package, $service, array $post = null, $client = false)
+    {
+        // Get module row
+        $row = $this->getModuleRow();
+
+        // Set the current view
+        $this->view = new View($client ? 'tab_client_backups' : 'tab_backups', 'default');
+        $this->view->base_uri = $this->base_uri;
+
+        // Load the helpers required for this view
+        Loader::loadHelpers($this, ['Form', 'Html']);
+
+        // Get the service fields
+        $service_fields = $this->serviceFieldsToObject($service->fields);
+
+        // Get the service configurable options
+        $service_options = $this->serviceOptionsToObject($service->options);
+
+        // Initialize the Vultr API
+        $api = $this->getApi($row->meta->api_key);
+        $api->loadCommand('vultr_instances');
+        $api->loadCommand('vultr_backup');
+
+        $server_api = new VultrInstances($api);
+        $backup_api = new VultrBackup($api);
+
+        // Perform actions
+        if (!empty($post)) {
+            switch ($post['action']) {
+                case 'schedule':
+                    //
+                    // TODO: Add the ability of modifying the backup schedule.
+                    //
+                case 'restore':
+                    $params = [
+                        'instance-id' => $service_fields->vultr_subid,
+                        'backup_id' => $this->Html->safe($post['backupid'])
+                    ];
+                    $server_api->restoreBackup($params);
+
+                    $vars = (object) $post;
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        // Get server backups
+        $params = [
+            'instance_id' => $service_fields->vultr_subid
+        ];
+        $this->log('api.vultr.com|list', serialize($params), 'input', true);
+        $backups = (array) $this->parseResponse($backup_api->listBackups($params));
+
+        $this->view->set('module_row', $row);
+        $this->view->set('package', $package);
+        $this->view->set('service', $service);
+        $this->view->set('service_fields', $service_fields);
+        $this->view->set('service_options', $service_options);
+        $this->view->set('backups', $backups);
+        $this->view->set('vars', ($vars ?? new stdClass()));
 
         $this->view->setDefaultView('components' . DS . 'modules' . DS . 'vultr' . DS);
 
@@ -2426,6 +2321,8 @@ class Vultr extends Module
      */
     public function validateSubID($subid, $server_type)
     {
+        Loader::loadHelpers($this, ['Form']);
+
         if (empty($subid)) {
             return true;
         }
@@ -2443,16 +2340,18 @@ class Vultr extends Module
         $api = $this->getApi($module_row->meta->api_key);
 
         if ($server_type == 'server') {
-            $api->loadCommand('vultr_server');
-            $vultr_api = new VultrServer($api);
+            $api->loadCommand('vultr_instances');
+            $vultr_api = new VultrInstances($api);
+            $result = $vultr_api->listServers()->response();
         } else {
             $api->loadCommand('vultr_baremetal');
             $vultr_api = new VultrBaremetal($api);
+            $result = $vultr_api->listBaremetal()->response();
         }
 
-        $servers = $vultr_api->listServers()->response();
+        $servers = $this->Form->collapseObjectArray($result->instances ?? $result->bare_metals ?? [], 'hostname', 'id');
 
-        return property_exists($servers, $subid);
+        return array_key_exists($subid, $servers);
     }
 
     /**
@@ -2472,7 +2371,7 @@ class Vultr extends Module
 
             $result = $account_api->info()->response();
 
-            return isset($result->pending_charges);
+            return isset($result->account->email);
         } catch (Exception $e) {
             // Trap any errors encountered, could not validate connection
         }
@@ -2493,38 +2392,39 @@ class Vultr extends Module
         if ($package->meta->set_template == 'admin') {
             $template = $package->meta->template;
         } elseif ($package->meta->set_template == 'client') {
-            $template = isset($vars['vultr_template']) ? $vars['vultr_template'] : null;
+            $template = $vars['vultr_template'] ?? null;
         }
 
         $template = explode('-', $template, 2);
 
         if (isset($template[0]) && $template[0] == 'os') {
-            $osid = isset($template[1]) ? $template[1] : null;
+            $osid = $template[1] ?? null;
             $appid = null;
         } else {
             $osid = 186;
-            $appid = isset($template[1]) ? $template[1] : null;
+            $appid = $template[1] ?? null;
         }
 
         // Set the fields array depending on the server type
         if ($package->meta->server_type == 'server') {
             $fields = [
-                'DCID' => isset($vars['vultr_location']) ? $vars['vultr_location'] : null,
-                'VPSPLANID' => $package->meta->server_plan,
-                'OSID' => $osid,
-                'enable_ipv6' => isset($vars['vultr_enable_ipv6']) ? $vars['vultr_enable_ipv6'] : null,
+                'region' => $vars['vultr_location'] ?? null,
+                'plan' => $package->meta->server_plan,
+                'os_id' => $osid,
+                'enable_ipv6' => (($vars['vultr_enable_ipv6'] ?? null) == 'enable'),
+                'backups' => ($vars['configoptions']['enable_backup'] ?? null) == 'enable' ? 'enabled' : 'disabled',
                 'label' => isset($vars['vultr_hostname']) ? strtolower($vars['vultr_hostname']) : null,
-                'APPID' => $appid,
+                'app_id' => $appid,
                 'hostname' => isset($vars['vultr_hostname']) ? strtolower($vars['vultr_hostname']) : null
             ];
         } else {
             $fields = [
-                'DCID' => isset($vars['vultr_location']) ? $vars['vultr_location'] : null,
-                'METALPLANID' => $package->meta->baremetal_plan,
-                'OSID' => $osid,
-                'enable_ipv6' => isset($vars['vultr_enable_ipv6']) ? $vars['vultr_enable_ipv6'] : null,
+                'region' => $vars['vultr_location'] ?? null,
+                'plan' => $package->meta->baremetal_plan,
+                'os_id' => $osid,
+                'enable_ipv6' => ($vars['vultr_enable_ipv6'] == 'enable'),
                 'label' => isset($vars['vultr_hostname']) ? strtolower($vars['vultr_hostname']) : null,
-                'APPID' => $appid,
+                'app_id' => $appid,
                 'hostname' => isset($vars['vultr_hostname']) ? strtolower($vars['vultr_hostname']) : null
             ];
         }
@@ -2535,7 +2435,7 @@ class Vultr extends Module
     /**
      * Parses the response from the API into a stdClass object.
      *
-     * @param stdClass $response The response from the API
+     * @param VultrResponse $response The response from the API
      * @return stdClass A stdClass object representing the response, void if the response was an error
      */
     private function parseResponse($response)

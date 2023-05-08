@@ -52,6 +52,16 @@ $lang['Vultr.package_fields.surcharge_templates'] = 'Surcharge Templates';
 $lang['Vultr.package_fields.allow_surcharge_templates'] = 'Allow Surcharge Templates';
 $lang['Vultr.package_fields.disallow_surcharge_templates'] = 'Disallow Surcharge Templates';
 
+// Baremetal plans
+$lang['Vultr.get_baremetal_plans.plan_name'] = '%1$s %2$s %3$sc %4$s %5$sx%6$sGB RAM %7$sMB'; // %1$s CPU vendor, %2$s CPU model, %3$s CPU cores, %4$s Storage type, %5$s Disk count, %6$s Disk storage in GB, %7$s RAM in MB
+
+// Server plans
+$lang['Vultr.get_server_plans.plan_name'] = '%1$s Disk %2$sGB RAM %3$sMB vCores %4$s'; // %1$s Disk Space, %2$s RAM, %3$s Amount of virtual cores, %4$s CPU vendor
+
+// Templates
+$lang['Vultr.get_templates.paid_template_name'] = '%1$s (Surcharge applies)'; // %1$s The name of the template
+
+
 // Service fields
 $lang['Vultr.service_field.subid'] = 'Vultr SUBID';
 $lang['Vultr.service_field.hostname'] = 'Hostname';
@@ -209,4 +219,3 @@ $lang['Vultr.!error.module_row.missing'] = 'An internal error occurred. The modu
 $lang['Vultr.!error.vultr_hostname.format'] = 'Please enter a valid hostname, e.g. domain.com.';
 $lang['Vultr.!error.vultr_location.valid'] = 'Please select a valid location.';
 $lang['Vultr.!error.vultr_template.valid'] = 'Please select a valid template.';
-$lang['Vultr.!error.vultr_subid.valid'] = 'Please enter a valid Vultr SUBID.';

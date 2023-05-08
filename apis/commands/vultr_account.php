@@ -4,7 +4,7 @@
  *
  * @package blesta
  * @subpackage blesta.components.modules.vultr
- * @copyright Copyright (c) 2010, Phillips Data, Inc.
+ * @copyright Copyright (c) 2023, Phillips Data, Inc.
  * @license http://www.blesta.com/license/ The Blesta License Agreement
  * @link http://www.blesta.com/ Blesta
  */
@@ -28,10 +28,10 @@ class VultrAccount
     /**
      * Retrieve information about the current account.
      *
-     * @return stdClass An object containing the api response
+     * @return VultrResponse An object containing the api response
      */
     public function info()
     {
-        return $this->api->apiRequest('/account/info');
+        return $this->api->apiRequest('/account');
     }
 }

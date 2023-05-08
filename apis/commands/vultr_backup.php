@@ -4,7 +4,7 @@
  *
  * @package blesta
  * @subpackage blesta.components.modules.vultr
- * @copyright Copyright (c) 2010, Phillips Data, Inc.
+ * @copyright Copyright (c) 2023, Phillips Data, Inc.
  * @license http://www.blesta.com/license/ The Blesta License Agreement
  * @link http://www.blesta.com/ Blesta
  */
@@ -26,15 +26,28 @@ class VultrBackup
     }
 
     /**
+     * Get a specific backup.
+     *
+     * @param array $params An array containing the following arguments:
+     *     - backup-id: The Backup id.
+     * @return VultrResponse An object containing the api response
+     */
+    public function get($params = [])
+    {
+        return $this->api->apiRequest('/backups/' . ($params['backup-id'] ?? ''));
+    }
+
+    /**
      * List all backups on the current account.
      *
-     * @param array $params An array contaning the following arguments:
-     *     - SUBID: Filter result set to only contain backups of this subscription object. (optional)
-     *     - BACKUPID: Filter result set to only contain this backup. (optional)
-     * @return stdClass An object containing the api response
+     * @param array $params An array containing the following arguments:
+     *     - instance_id: Filter result set to only contain backups of this instance. (optional)
+     *     - per_page: Number of items requested per page. Default is 100 and Max is 500. (optional)
+     *     - cursor: Cursor for paging. See Meta and Pagination. (optional)
+     * @return VultrResponse An object containing the api response
      */
     public function listBackups($params = [])
     {
-        return $this->api->apiRequest('/backup/list', $params);
+        return $this->api->apiRequest('/backups', $params);
     }
 }
