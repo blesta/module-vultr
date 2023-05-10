@@ -42,7 +42,7 @@ class VultrApi
     }
 
     /**
-     * Send a request to the Vultr API.
+     * Sends a request to the Vultr API.
      *
      * @param string $method Specifies the endpoint and method to invoke
      * @param array $params The parameters to include in the api call
@@ -119,6 +119,26 @@ class VultrApi
             'content' => $response,
             'status' => $status
         ]);
+    }
+
+    /**
+     * Sends a legacy request to the Vultr API.
+     *
+     * @param string $method Specifies the endpoint and method to invoke
+     * @return stdClass The API response
+     */
+    public function legacyRequest($method)
+    {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_TIMEOUT, 20);
+        curl_setopt($ch, CURLOPT_FRESH_CONNECT, true);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['API-Key: ' . $this->api_key]);
+        curl_setopt($ch, CURLOPT_URL, 'https://api.vultr.com/v1/' . trim($method, '/'));
+        $response = (object) json_decode(curl_exec($ch));
+        curl_close($ch);
+
+        return $response;
     }
 
     /**

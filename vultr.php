@@ -46,8 +46,11 @@ class Vultr extends Module
             if (!isset($this->Services)) {
                 Loader::loadModels($this, ['Services']);
             }
+            if (!isset($this->Packages)) {
+                Loader::loadModels($this, ['Packages']);
+            }
 
-            // Replace the old SUBID on services with the ID of the service
+            // Update services and packages to the v2 API
             $modules = $this->ModuleManager->getByClass('vultr');
             foreach ($modules as $module) {
                 $services = $this->Services->getAll(
@@ -55,27 +58,41 @@ class Vultr extends Module
                     true,
                     ['module_id' => $module->id, 'status' => 'all']
                 );
+                $packages = $this->Packages->getAll(
+                    Configure::get('Blesta.company_id'),
+                    ['name' => 'ASC'],
+                    null,
+                    null,
+                    ['module_id' => $module->id]
+                );
 
-                foreach ($services as $service) {
+                // Update services
+                /*foreach ($services as $service) {
                     // Get the service fields
                     $service_fields = $this->serviceFieldsToObject($service->fields);
 
                     // Get remote service
                     $remote_service = $this->getRemoteService($service);
-
-                    if (!empty($remote_service)) {
+                    if (isset($remote_service->id)) {
                         $service_fields->vultr_subid = $remote_service->id;
                         $service_fields->vultr_location = $remote_service->region;
                     }
 
+                    // Get remote snapshots
+                    $service_fields->vultr_snapshots = $this->getRemoteSnapshots($service);
+
                     // Update service
                     $this->Services->edit($service->id, (array) $service_fields);
-                    if ($this->Services->errors()) {
-                        $this->Input->setErrors($this->Services->errors());
-                    }
+                }*/
+
+                // Update packages
+                foreach ($packages as $package) {
+                    
                 }
             }
         }
+
+        exit;
     }
 
     /**
@@ -111,20 +128,11 @@ class Vultr extends Module
         }
 
         if (empty($subids)) {
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_TIMEOUT, 20);
-            curl_setopt($ch, CURLOPT_FRESH_CONNECT, true);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, ['API-Key: ' . $row->meta->api_key]);
-
             if ($service->package->meta->server_type == 'server') {
-                curl_setopt($ch, CURLOPT_URL, 'https://api.vultr.com/v1/server/list');
+                $subids = (array) $api->legacyRequest('/server/list');
             } else {
-                curl_setopt($ch, CURLOPT_URL, 'https://api.vultr.com/v1/baremetal/list');
+                $subids = (array) $api->legacyRequest('/baremetal/list');
             }
-
-            $subids = (array) json_decode(curl_exec($ch));
-            curl_close($ch);
 
             if (Configure::get('Caching.on') && is_writable(CACHEDIR) && !empty($subids)) {
                 try {
@@ -199,6 +207,39 @@ class Vultr extends Module
         }
 
         return $remote_service ?? (object) [];
+    }
+
+    /**
+     * Fetches the remote snapshots from Vultr based on the given service object
+     *
+     * @param stdClass $service The object representing the service
+     * @return array An array containing the service snapshots
+     */
+    private function getRemoteSnapshots($service)
+    {
+        // Get module row
+        $row = $this->getModuleRow($service->module_row_id ?? null);
+
+        // Initialize the Vultr API
+        $api = $this->getApi($row->meta->api_key);
+
+        // Get the service fields
+        $service_fields = $this->serviceFieldsToObject($service->fields);
+
+        if (empty($service_fields->vultr_snapshots)) {
+            return [];
+        }
+
+        // Get remote snapshots
+        $snapshots = [];
+        $remote_snapshots = (array) $api->legacyRequest('/snapshot/list');
+        foreach ($service_fields->vultr_snapshots as $snapshot_id => $snapshot_description) {
+            if (isset($remote_snapshots[$snapshot_id])) {
+                $snapshots[$remote_snapshots[$snapshot_id]->v2_id] = $snapshot_description;
+            }
+        }
+
+        return $snapshots;
     }
 
     /**
@@ -1373,11 +1414,6 @@ class Vultr extends Module
                 'key' => 'vultr_snapshots',
                 'value' => [],
                 'encrypted' => 0
-            ],
-            [
-                'key' => 'vultr_dns_domains',
-                'value' => [],
-                'encrypted' => 0
             ]
         ];
     }
@@ -1434,7 +1470,7 @@ class Vultr extends Module
         // Check for fields that changed
         $delta = [];
         foreach ($vars as $key => $value) {
-            if (!array_key_exists($key, $service_fields) || $vars[$key] != $service_fields->$key) {
+            if (!array_key_exists($key, (array) $service_fields) || $vars[$key] != $service_fields->$key) {
                 $delta[$key] = $value;
             }
         }
