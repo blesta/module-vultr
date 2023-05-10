@@ -30,6 +30,178 @@ class Vultr extends Module
     }
 
     /**
+     * Performs migration of data from $current_version (the current installed version)
+     * to the given file set version. Sets Input errors on failure, preventing
+     * the module from being upgraded.
+     *
+     * @param string $current_version The current installed version of this module
+     */
+    public function upgrade($current_version)
+    {
+        // Upgrade to 2.0.0
+        if (version_compare($current_version, '2.0.0', '<')) {
+            if (!isset($this->ModuleManager)) {
+                Loader::loadModels($this, ['ModuleManager']);
+            }
+            if (!isset($this->Services)) {
+                Loader::loadModels($this, ['Services']);
+            }
+
+            // Replace the old SUBID on services with the ID of the service
+            $modules = $this->ModuleManager->getByClass('vultr');
+            foreach ($modules as $module) {
+                $services = $this->Services->getAll(
+                    ['date_added' => 'DESC'],
+                    true,
+                    ['module_id' => $module->id, 'status' => 'all']
+                );
+
+                foreach ($services as $service) {
+                    // Get the service fields
+                    $service_fields = $this->serviceFieldsToObject($service->fields);
+
+                    // Get remote service
+                    $remote_service = $this->getRemoteService($service);
+
+                    if (!empty($remote_service)) {
+                        $service_fields->vultr_subid = $remote_service->id;
+                        $service_fields->vultr_location = $remote_service->region;
+                    }
+
+                    // Update service
+                    $this->Services->edit($service->id, (array) $service_fields);
+                    if ($this->Services->errors()) {
+                        $this->Input->setErrors($this->Services->errors());
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Fetches the remote server from Vultr based on the given service object
+     *
+     * @param stdClass $service The object representing the service
+     * @return stdClass The remote service
+     */
+    private function getRemoteService($service)
+    {
+        if (!isset($service->package->meta->server_type)) {
+            return (object) [];
+        }
+
+        // Get module row
+        $row = $this->getModuleRow($service->module_row_id ?? null);
+
+        // Initialize the Vultr API
+        $api = $this->getApi($row->meta->api_key);
+        $api->loadCommand('vultr_instances');
+        $api->loadCommand('vultr_baremetal');
+
+        // Get the service fields
+        $service_fields = $this->serviceFieldsToObject($service->fields);
+
+        // Get remote service by SUBID (until June 30th, 2023)
+        $cache = Cache::fetchCache(
+            $service->package->meta->server_type . '_subids',
+            Configure::get('Blesta.company_id') . DS . 'modules' . DS . 'vultr' . DS
+        );
+        if ($cache) {
+            $subids = unserialize(base64_decode($cache));
+        }
+
+        if (empty($subids)) {
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_TIMEOUT, 20);
+            curl_setopt($ch, CURLOPT_FRESH_CONNECT, true);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, ['API-Key: ' . $row->meta->api_key]);
+
+            if ($service->package->meta->server_type == 'server') {
+                curl_setopt($ch, CURLOPT_URL, 'https://api.vultr.com/v1/server/list');
+            } else {
+                curl_setopt($ch, CURLOPT_URL, 'https://api.vultr.com/v1/baremetal/list');
+            }
+
+            $subids = (array) json_decode(curl_exec($ch));
+            curl_close($ch);
+
+            if (Configure::get('Caching.on') && is_writable(CACHEDIR) && !empty($subids)) {
+                try {
+                    Cache::writeCache(
+                        $service->package->meta->server_type . '_subids',
+                        base64_encode(serialize($subids)),
+                        strtotime(Configure::get('Blesta.cache_length')) - time(),
+                        Configure::get('Blesta.company_id') . DS . 'modules' . DS . 'vultr' . DS
+                    );
+                } catch (Exception $e) {
+                    // Write to cache failed, so disable caching
+                    Configure::set('Caching.on', false);
+                }
+            }
+        }
+
+        if (isset($subids[$service_fields->vultr_subid])) {
+            if ($service->package->meta->server_type == 'server') {
+                $vultr_api = new VultrInstances($api);
+                $instance = $vultr_api->get([
+                    'instance-id' => $subids[$service_fields->vultr_subid]->v2_id ?? ''
+                ])->response();
+            } else {
+                $vultr_api = new VultrBaremetal($api);
+                $instance = $vultr_api->get([
+                    'baremetal-id' => $subids[$service_fields->vultr_subid]->v2_id ?? ''
+                ])->response();
+            }
+        }
+
+        // Get remote service, by matching the hostname and OS
+        if (empty($instance->instance)) {
+            if ($service->package->meta->server_type == 'server') {
+                $vultr_api = new VultrInstances($api);
+                $response = $vultr_api->listServers(['label' => $service_fields->vultr_hostname])->response();
+
+                foreach ($response->instances ?? [] as $remote_instance) {
+                    $os_template = explode('-', $service_fields->vultr_template, 2);
+
+                    if (
+                        $remote_instance->hostname == $service_fields->vultr_hostname
+                        && (
+                            ($remote_instance->os_id == ($os_template[1] ?? '') && ($os_template[0] ?? '') == 'os')
+                            || ($remote_instance->app_id == ($os_template[1] ?? '') && ($os_template[0] ?? '') == 'app')
+                        )
+                    ){
+                        $remote_service = $remote_instance;
+                        break;
+                    }
+                }
+            } else {
+                $vultr_api = new VultrBaremetal($api);
+                $response = $vultr_api->listBaremetal()->response();
+
+                foreach ($response->instances ?? [] as $remote_instance) {
+                    $os_template = explode('-', $service_fields->vultr_template, 2);
+
+                    if (
+                        $remote_instance->label == $service_fields->vultr_hostname
+                        && (
+                            ($remote_instance->os_id == ($os_template[1] ?? '') && ($os_template[0] ?? '') == 'os')
+                            || ($remote_instance->app_id == ($os_template[1] ?? '') && ($os_template[0] ?? '') == 'app')
+                        )
+                    ){
+                        $remote_service = $remote_instance;
+                        break;
+                    }
+                }
+            }
+        } else {
+            $remote_service = $instance->instance;
+        }
+
+        return $remote_service ?? (object) [];
+    }
+
+    /**
      * Returns all tabs to display to an admin when managing a service whose
      * package uses this module.
      *
