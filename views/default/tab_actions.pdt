@@ -72,7 +72,7 @@
                 $this->Form->end();
                 ?>
 
-                <a href="#" class="change_template btn btn-default btn-block<?php echo (isset($package->meta->set_template) ? $package->meta->set_template : null) != 'client' || (isset($status) ? $status : null) == 'locked' ? ' disabled' : ''; ?>" style="margin-top: 10px; float: left; padding: 6px 0px;">
+                <a<?php echo (isset($package->meta->set_template) ? $package->meta->set_template : null) != 'client' || (isset($status) ? $status : null) == 'locked' ? ' disabled="disabled"' : ''; ?> href="#" class="change_template btn btn-default btn-block" style="margin-top: 10px; float: left; padding: 6px 0px;">
                     <i class="fas fa-download"></i> <?php $this->_('Vultr.tab_client_actions.action_change_template'); ?>
                 </a>
             </div>

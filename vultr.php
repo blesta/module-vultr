@@ -2018,7 +2018,7 @@ class Vultr extends Module
     public function tabBackups($package, $service, array $get = null, array $post = null, array $files = null)
     {
         // Get backups tab
-        return $this->getBackupsSnapshots($package, $service, $post);
+        return $this->getTabBackups($package, $service, $post);
     }
 
     /**
@@ -2314,6 +2314,7 @@ class Vultr extends Module
 
         // Load the helpers required for this view
         Loader::loadHelpers($this, ['Form', 'Html']);
+        Loader::loadModels($this, ['Services']);
 
         // Get the service fields
         $service_fields = $this->serviceFieldsToObject($service->fields);
@@ -2334,10 +2335,10 @@ class Vultr extends Module
                         'instance_id' => $service_fields->vultr_subid,
                         'description' => $this->Html->safe($post['description'])
                     ];
+                    $this->log('api.vultr.com|create_snapshot', serialize($params), 'input', true);
                     $result = $this->parseResponse($snapshot_api->create($params));
 
                     if (isset($result->snapshot->id)) {
-                        Loader::loadModels($this, ['Services']);
                         $service_fields->vultr_snapshots = $service_fields->vultr_snapshots + [
                             $result->snapshot->id => $this->Html->safe($post['description'])
                         ];
@@ -2356,6 +2357,7 @@ class Vultr extends Module
                     $params = [
                         'snapshot-id' => $this->Html->safe($post['snapshotid'])
                     ];
+                    $this->log('api.vultr.com|remove_snapshot', serialize($params), 'input', true);
                     $this->parseResponse($snapshot_api->destroy($params));
 
                     unset($service_fields->vultr_snapshots[$post['snapshotid']]);
@@ -2363,7 +2365,6 @@ class Vultr extends Module
                     $data = [
                         'vultr_snapshots' => $service_fields->vultr_snapshots
                     ];
-
                     $this->Services->edit($service->id, $data);
                     if ($this->Services->errors()) {
                         $this->Input->setErrors($this->Services->errors());
@@ -2376,6 +2377,7 @@ class Vultr extends Module
                         'instance-id' => $service_fields->vultr_subid,
                         'snapshot_id' => $this->Html->safe($post['snapshotid'])
                     ];
+                    $this->log('api.vultr.com|restore_snapshot', serialize($params), 'input', true);
                     $this->parseResponse($server_api->restoreSnapshot($params));
 
                     $vars = (object) $post;
@@ -2387,10 +2389,16 @@ class Vultr extends Module
 
         // Get server snapshots
         $snapshots = $service_fields->vultr_snapshots;
-        $vultr_snapshots = $this->parseResponse($snapshot_api->listSnapshots());
+        $response = $this->parseResponse($snapshot_api->listSnapshots());
+
+        $vultr_snapshots = [];
+        foreach ($response->snapshots ?? [] as $snapshot) {
+            $vultr_snapshots[$snapshot->id] = $snapshot;
+        }
+
         foreach ($snapshots as $id => $description) {
-            if (isset($vultr_snapshots->{$id})) {
-                $snapshots[$id] = $vultr_snapshots->{$id};
+            if (isset($vultr_snapshots[$id])) {
+                $snapshots[$id] = $vultr_snapshots[$id];
             } else {
                 unset($snapshots[$id]);
             }
@@ -2455,7 +2463,8 @@ class Vultr extends Module
                         'instance-id' => $service_fields->vultr_subid,
                         'backup_id' => $this->Html->safe($post['backupid'])
                     ];
-                    $server_api->restoreBackup($params);
+                    $this->log('api.vultr.com|restore_backup', serialize($params), 'input', true);
+                    $this->parseResponse($server_api->restoreBackup($params));
 
                     $vars = (object) $post;
                     break;
@@ -2469,7 +2478,8 @@ class Vultr extends Module
             'instance_id' => $service_fields->vultr_subid
         ];
         $this->log('api.vultr.com|list', serialize($params), 'input', true);
-        $backups = (array) $this->parseResponse($backup_api->listBackups($params));
+        $response = $this->parseResponse($backup_api->listBackups($params));
+        $backups = (array) $response->backups ?? [];
 
         $this->view->set('module_row', $row);
         $this->view->set('package', $package);

@@ -1,7 +1,7 @@
     <h4><?php $this->_('Vultr.tab_client_backups.backups'); ?></h4>
 
     <?php
-    if ((isset($service_options->enable_backup) ? $service_options->enable_backup : null) == 'enable') {
+    if (($service_options->enable_backup ?? null) == 'enable') {
         $this->Form->create();
         $this->Form->fieldHidden('backupid', '', ['id' => 'backupid']);
         $this->Form->fieldHidden('action', '', ['id' => 'action']);
@@ -20,23 +20,23 @@
             </thead>
             <tbody>
                 <?php
-                foreach ($backups as $backupid => $backup) {
+                foreach ($backups as $backup) {
                 ?>
                 <tr>
-                    <td><strong><?php echo (isset($backupid) ? $this->Html->safe($backupid) : null); ?></strong></td>
+                    <td><strong><?php echo (isset($backup->id) ? $this->Html->safe($backup->id) : null); ?></strong></td>
                     <td><?php echo (isset($backup->date_created) ? $this->Html->safe($backup->date_created) : null); ?></td>
                     <td><?php echo (isset($backup->description) ? $this->Html->safe($backup->description) : null); ?></td>
                     <td>
-                        <a class="btn btn-xs btn-success restore-backup" href="#" data-id="<?php echo (isset($backupid) ? $this->Html->safe($backupid) : null); ?>" data-toggle="modal" data-target="#restore-backup<?php echo $backupid; ?>">
+                        <a class="btn btn-xs btn-success restore-backup" href="#" data-id="<?php echo (isset($backup->id) ? $this->Html->safe($backup->id) : null); ?>" data-toggle="modal" data-target="#restore-backup<?php echo $backup->id; ?>">
                             <i class="fas fa-check"></i>
                             <?php $this->_('Vultr.tab_client_backups.restore_backup'); ?>
                         </a>
-                        <div id="restore-backup<?php echo $backupid; ?>" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+                        <div id="restore-backup<?php echo $backup->id; ?>" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
                             <div class="modal-dialog">
                                 <div class="modal-content">
                                     <div class="modal-header">
                                         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                                        <h4 class="global_modal_title"><?php $this->_('Vultr.tab_client_backups.heading_restore_backup', false, (isset($backupid) ? $backupid : null)); ?></h4>
+                                        <h4 class="global_modal_title"><?php $this->_('Vultr.tab_client_backups.heading_restore_backup', false, ($backup->id ?? null)); ?></h4>
                                     </div>
                                     <div class="modal-body"><?php $this->_('Vultr.tab_client_backups.confirm_restore_backup'); ?></div>
                                     <div class="modal-footer">

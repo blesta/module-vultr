@@ -92,7 +92,6 @@ class VultrApi
 
         // Execute request
         $url = 'https://api.vultr.com/v2/' . trim($method, '/');
-
         $this->last_request = [
             'url' => $url,
             'params' => $params
@@ -103,7 +102,7 @@ class VultrApi
         $response = curl_exec($ch);
         $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
-        if ($response == false) {
+        if ($response == false && empty($status)) {
             $error = [
                 'error' => 'An internal error occurred, or the server did not respond to the request.',
                 'status' => 500
