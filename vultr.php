@@ -67,7 +67,7 @@ class Vultr extends Module
                 );
 
                 // Update services
-                /*foreach ($services as $service) {
+                foreach ($services as $service) {
                     // Get the service fields
                     $service_fields = $this->serviceFieldsToObject($service->fields);
 
@@ -83,16 +83,56 @@ class Vultr extends Module
 
                     // Update service
                     $this->Services->edit($service->id, (array) $service_fields);
-                }*/
+                }
 
                 // Update packages
+                $plans_map = [
+                    'SSD' => 'vc2',
+                    'HIGHFREQUENCY' => 'vhf',
+                    'AMDHIGHPERF' => 'vhp',
+                    'INTELHIGHPERF' => 'vhp',
+                    'DEDICATEDOPTIMIZED' => 'vdc',
+                    'CLOUDGPU' => 'vcg'
+                ];
                 foreach ($packages as $package) {
-                    
+                    $package = $this->Packages->get($package->id);
+
+                    // Initialize the Vultr API
+                    $row = $this->getModuleRow($package->module_row);
+                    $api = $this->getApi($row->meta->api_key);
+
+                    if ($package->meta->server_type == 'server') {
+                        $legacy_plans = (array) $api->legacyRequest('/plans/list');
+
+                        if (isset($legacy_plans[$package->meta->server_plan])) {
+                            $legacy_plan = (object) $legacy_plans[$package->meta->server_plan];
+
+                            $package->meta->baremetal_plan = '';
+                            $package->meta->server_plan = $plans_map[$legacy_plan->plan_type] . '-'
+                                . $legacy_plan->vcpu_count . 'c-' . round($legacy_plan->ram / 1024) . 'gb'
+                                . (str_contains(strtolower($legacy_plan->plan_type), 'intel') ? '-intel' : '')
+                                . (str_contains(strtolower($legacy_plan->plan_type), 'amd') ? '-amd' : '');
+                        }
+                    } else {
+                        $legacy_plans = (array) $api->legacyRequest('/plans/list_baremetal');
+
+                        if (isset($legacy_plans[$package->meta->baremetal_plan])) {
+                            $legacy_plan = (object) $legacy_plans[$package->meta->baremetal_plan];
+
+                            $package->meta->baremetal_plan = 'vbm-' . $legacy_plan->cpu_count . 'c-'
+                                . round($legacy_plan->ram / 1024) . 'gb'
+                                . (str_contains(strtolower($legacy_plan->cpu_model), 'epyc') ? '-amd' : '');
+                            $package->meta->server_plan = '';
+                        }
+                    }
+
+                    $this->Packages->edit($package->id, ['meta' => (array) $package->meta]);
+                    if (($errors = $this->Packages->errors())) {
+                        $this->Input->setErrors($errors);
+                    }
                 }
             }
         }
-
-        exit;
     }
 
     /**
@@ -2726,7 +2766,7 @@ class Vultr extends Module
      * @param array $vars An array of key/value data pairs
      * @return array An array of Input rules suitable for Input::setRules()
      */
-    private function getPackageRules()
+    private function getPackageRules(&$vars)
     {
         $rules = [
             'meta[server_type]' => [
@@ -2750,6 +2790,12 @@ class Vultr extends Module
                 ]
             ]
         ];
+
+        if ($vars['meta']['server_type'] == 'server') {
+            unset($rules['meta[baremetal_plan]']);
+        } else {
+            unset($rules['meta[server_plan]']);
+        }
 
         return $rules;
     }
