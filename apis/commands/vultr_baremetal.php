@@ -42,6 +42,21 @@ class VultrBaremetal
      *
      * @param array $params An array containing the following arguments:
      *     - baremetal-id: The Bare Metal id.
+     *     - plan: Plan to use when creating this server.
+     *     - os_id: Operating system to use.
+     *     - script_id: If you've not selected a 'custom' operating system, this can be the
+     *         script_id of a startup script to execute on boot. (optional)
+     *     - snapshot_id: If you've selected the 'snapshot' operating system, this
+     *         should be the SNAPSHOTID. (optional)
+     *     - enable_ipv6: If true, an IPv6 subnet will be assigned. (optional)
+     *     - label: This is a text label that will be shown in the control panel. (optional)
+     *     - sshkey_id: List of SSH keys to apply to this server on install. (optional)
+     *     - app_id: If launching an application (OSID 186), this is the APPID to launch. (optional)
+     *     - user_data: Base64 encoded user-data. (optional)
+     *     - activation_email: 'true' or 'false'. If true, an activation email will be sent. (optional)
+     *     - reserved_ipv4: IP address of the floating IP to use on this server. (optional)
+     *     - hostname: The hostname to assign to this server. (optional)
+     *     - tags: The tags to assign to this server. (optional)
      * @return VultrResponse An instance of the API response
      */
     public function destroy($params = [])
@@ -103,12 +118,12 @@ class VultrBaremetal
      * the machine is severed.
      *
      * @param array $params An array containing the following arguments:
-     *     - baremetal_ids: The Bare Metal id.
+     *     - baremetal-id: The Bare Metal id.
      * @return VultrResponse An instance of the API response
      */
     public function halt($params = [])
     {
-        return $this->api->apiRequest('/bare-metals/halt', $params, 'POST');
+        return $this->api->apiRequest('/bare-metals/' . ($params['baremetal-id'] ?? '') . '/halt', $params, 'POST');
     }
 
     /**
@@ -116,12 +131,12 @@ class VultrBaremetal
      * is powered off, then back on.
      *
      * @param array $params An array containing the following arguments:
-     *     - baremetal_ids: The Bare Metal id.
+     *     - baremetal-id: The Bare Metal id.
      * @return VultrResponse An instance of the API response
      */
     public function reboot($params = [])
     {
-        return $this->api->apiRequest('/bare-metals/reboot', $params, 'POST');
+        return $this->api->apiRequest('/bare-metals/' . ($params['baremetal-id'] ?? '') . '/reboot', $params, 'POST');
     }
 
     /**

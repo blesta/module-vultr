@@ -53,10 +53,17 @@ class Vultr extends Module
             // Update services and packages to the v2 API
             $modules = $this->ModuleManager->getByClass('vultr');
             foreach ($modules as $module) {
-                $services = $this->Services->getAll(
-                    ['date_added' => 'DESC'],
-                    true,
-                    ['module_id' => $module->id, 'status' => 'all']
+                $services = array_merge(
+                    $this->Services->getAll(
+                        ['date_added' => 'DESC'],
+                        true,
+                        ['module_id' => $module->id, 'status' => 'active']
+                    ),
+                    $this->Services->getAll(
+                        ['date_added' => 'DESC'],
+                        true,
+                        ['module_id' => $module->id, 'status' => 'suspended']
+                    )
                 );
                 $packages = $this->Packages->getAll(
                     Configure::get('Blesta.company_id'),
@@ -83,6 +90,13 @@ class Vultr extends Module
 
                     // Update service
                     $this->Services->edit($service->id, (array) $service_fields);
+                    if (($errors = $this->Services->errors())) {
+                        $this->Input->setErrors($errors);
+                    }
+
+                    if ($this->Input->errors()) {
+                        return;
+                    }
                 }
 
                 // Update packages
@@ -129,6 +143,10 @@ class Vultr extends Module
                     $this->Packages->edit($package->id, ['meta' => (array) $package->meta]);
                     if (($errors = $this->Packages->errors())) {
                         $this->Input->setErrors($errors);
+                    }
+
+                    if ($this->Input->errors()) {
+                        return;
                     }
                 }
             }
@@ -1678,11 +1696,11 @@ class Vultr extends Module
             if ($package->meta->server_type == 'server') {
                 $api->loadCommand('vultr_instances');
                 $instances_api = new VultrInstances($api);
-                $params = ['instance_ids' => [$service_fields->vultr_subid]];
+                $params = ['instance-id' => $service_fields->vultr_subid];
             } else {
                 $api->loadCommand('vultr_baremetal');
                 $instances_api = new VultrBaremetal($api);
-                $params = ['baremetal_ids' => [$service_fields->vultr_subid]];
+                $params = ['baremetal-id' => $service_fields->vultr_subid];
             }
 
             $this->log('api.vultr.com|halt', serialize($params), 'input', true);
@@ -1724,11 +1742,11 @@ class Vultr extends Module
             if ($package->meta->server_type == 'server') {
                 $api->loadCommand('vultr_instances');
                 $instances_api = new VultrInstances($api);
-                $params = ['instance_ids' => [$service_fields->vultr_subid]];
+                $params = ['instance-id' => $service_fields->vultr_subid];
             } else {
                 $api->loadCommand('vultr_baremetal');
                 $instances_api = new VultrBaremetal($api);
-                $params = ['baremetal_ids' => [$service_fields->vultr_subid]];
+                $params = ['baremetal-id' => $service_fields->vultr_subid];
             }
 
             $this->log('api.vultr.com|reboot', serialize($params), 'input', true);
@@ -2148,17 +2166,22 @@ class Vultr extends Module
             } else {
                 switch ($post['action']) {
                     case 'restart':
+                        $params = [
+                            $instance_key => $service_fields->vultr_subid
+                        ];
+                        $this->parseResponse($vultr_api->reboot($params));
+                        break;
                     case 'start':
                         $params = [
                             $instance_key => $service_fields->vultr_subid
                         ];
-                        $vultr_api->reboot($params);
+                        $this->parseResponse($vultr_api->start($params));
                         break;
                     case 'stop':
                         $params = [
                             $instance_key => $service_fields->vultr_subid
                         ];
-                        $vultr_api->halt($params);
+                        $this->parseResponse($vultr_api->halt($params));
                         break;
                     case 'reinstall':
                         $params = [
@@ -2170,7 +2193,7 @@ class Vultr extends Module
                             unset($params['hostname']);
                         }
 
-                        $vultr_api->reinstall($params);
+                        $this->parseResponse($vultr_api->reinstall($params));
                         break;
                     case 'change_template':
                         if ($package->meta->set_template == 'client') {

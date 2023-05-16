@@ -269,12 +269,12 @@ class VultrInstances
      * Halt a virtual machine.
      *
      * @param array $params An array containing the following arguments:
-     *     - instance_ids: Unique identifier for this instance.
+     *     - instance_id: Unique identifier for this instance.
      * @return VultrResponse An object containing the api response.
      */
     public function halt($params = [])
     {
-        return $this->api->apiRequest('/instances/halt', $params, 'POST');
+        return $this->api->apiRequest('/instances/' . ($params['instance-id'] ?? '') . '/halt', $params, 'POST');
     }
 
     /**
@@ -458,12 +458,12 @@ class VultrInstances
      * Reboot a virtual machine.
      *
      * @param array $params An array containing the following arguments:
-     *     - instance-ids: The Instance IDs to reboot.
+     *     - instance-id: The Instance IDs to reboot.
      * @return VultrResponse An object containing the api response.
      */
     public function reboot($params = [])
     {
-        return $this->api->apiRequest('/instances/reboot', $params, 'POST');
+        return $this->api->apiRequest('/instances/' . ($params['instance-id'] ?? '') . '/reboot', $params, 'POST');
     }
 
     /**
@@ -633,7 +633,7 @@ class VultrInstances
      */
     public function start($params = [])
     {
-        return $this->api->apiRequest('/instances/start', $params, 'POST');
+        return $this->api->apiRequest('/instances/' . ($params['instance-id'] ?? '') . '/start', $params, 'POST');
     }
 
     /**
