@@ -4,7 +4,7 @@
  *
  * @package blesta
  * @subpackage blesta.components.modules.vultr
- * @copyright Copyright (c) 2010, Phillips Data, Inc.
+ * @copyright Copyright (c) 2023, Phillips Data, Inc.
  * @license http://www.blesta.com/license/ The Blesta License Agreement
  * @link http://www.blesta.com/ Blesta
  */
@@ -28,10 +28,13 @@ class VultrOs
     /**
      * Retrieve a list of available operating systems.
      *
-     * @return stdClass An object containing the api response
+     * @param array $params An array containing the following arguments:
+     *     - per_page: Number of items requested per page. Default is 100 and Max is 500. (optional)
+     *     - cursor: Cursor for paging. See Meta and Pagination. (optional)
+     * @return VultrResponse An object containing the api response
      */
-    public function listOs()
+    public function listOs($params = [])
     {
-        return $this->api->apiRequest('/os/list');
+        return $this->api->apiRequest('/os', $params);
     }
 }

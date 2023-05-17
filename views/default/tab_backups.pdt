@@ -3,7 +3,7 @@
     </div>
     <div class="pad">
         <?php
-        if ((isset($service_options->enable_backup) ? $service_options->enable_backup : null) == 'enable') {
+        if (($service_options->enable_backup ?? null) == 'enable') {
             $this->Form->create();
             $this->Form->fieldHidden('backupid', '', ['id' => 'backupid']);
             $this->Form->fieldHidden('action', '', ['id' => 'action']);
@@ -20,14 +20,14 @@
                 </tr>
                 <?php
                 $i = 0;
-                foreach ($backups as $backupid => $backup) {
+                foreach ($backups as $backup) {
                     ?>
                 <tr<?php echo ($i % 2 == 1) ? ' class="odd_row"' : ''; ?>>
-                    <td><strong><?php echo (isset($backupid) ? $this->Html->safe($backupid) : null); ?></strong></td>
+                    <td><strong><?php echo (isset($backup->id) ? $this->Html->safe($backup->id) : null); ?></strong></td>
                     <td><?php echo (isset($backup->date_created) ? $this->Html->safe($backup->date_created) : null); ?></td>
                     <td><?php echo (isset($backup->description) ? $this->Html->safe($backup->description) : null); ?></td>
                     <td>
-                        <a class="restore-backup submit" href="#" data-id="<?php echo (isset($backupid) ? $this->Html->safe($backupid) : null); ?>">
+                        <a class="restore-backup submit" href="#" data-id="<?php echo (isset($backup->id) ? $this->Html->safe($backup->id) : null); ?>">
                             <?php $this->_('Vultr.tab_backups.restore_backup'); ?>
                         </a>
                     </td>

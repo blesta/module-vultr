@@ -15,9 +15,9 @@
                     <td></td>
                     <td><?php echo (isset($service_fields->vultr_hostname) ? $this->Html->safe($service_fields->vultr_hostname) : null); ?></td>
                     <td><?php echo (isset($server_details->os) ? $this->Html->safe($server_details->os) : null); ?></td>
-                    <td><?php echo (isset($server_details->location) ? $this->Html->safe($server_details->location) : null); ?></td>
+                    <td><?php echo (isset($locations[$server_details->region]) ? $this->Html->safe($locations[$server_details->region]) : null); ?></td>
                     <td><?php echo (isset($server_details->main_ip) ? $this->Html->safe($server_details->main_ip) : null); ?></td>
-                    <td><?php echo (isset($server_details->default_password) ? $this->Html->safe($server_details->default_password) : null);?></td>
+                    <td><?php echo (isset($service_fields->vultr_password) ? $this->Html->safe($service_fields->vultr_password) : '*****');?></td>
                 </tr>
             </tbody>
         </table>
