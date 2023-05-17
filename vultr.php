@@ -1645,7 +1645,8 @@ class Vultr extends Module
         $fields = [
             'vultr_subid',
             'vultr_template',
-            'vultr_snapshots'
+            'vultr_snapshots',
+            'vultr_enable_ipv6'
         ];
 
         foreach ($fields as $field) {
@@ -2124,6 +2125,9 @@ class Vultr extends Module
         // Load the helpers required for this view
         Loader::loadHelpers($this, ['Form', 'Html']);
 
+        // Load the models required by this view
+        Loader::loadModels($this, ['Services']);
+
         // Get the service fields
         $service_fields = $this->serviceFieldsToObject($service->fields);
 
@@ -2197,8 +2201,6 @@ class Vultr extends Module
                         break;
                     case 'change_template':
                         if ($package->meta->set_template == 'client') {
-                            Loader::loadModels($this, ['Services']);
-
                             $data = [
                                 'vultr_subid' => $service_fields->vultr_subid,
                                 'vultr_template' => ($post['template'] ?? null)
@@ -2218,6 +2220,12 @@ class Vultr extends Module
                             ];
                             $this->log('api.vultr.com|ipv6Enable', serialize($params), 'input', true);
                             $this->parseResponse($vultr_api->ipv6Enable($params));
+
+                            $this->Services->edit($service->id, ['vultr_enable_ipv6' => 'enable']);
+                            if ($this->Services->errors()) {
+                                $vars = (object) $post;
+                                $this->Input->setErrors($this->Services->errors());
+                            }
                         }
                         break;
                     default:
@@ -2245,7 +2253,7 @@ class Vultr extends Module
         $this->view->set('service', $service);
         $this->view->set('service_fields', $service_fields);
         $this->view->set('templates', $templates);
-        $this->view->set('ipv6_enablable', !$service_fields->vultr_enable_ipv6 && $package->meta->server_type == 'server');
+        $this->view->set('ipv6_enablable', ($service_fields->vultr_enable_ipv6 !== 'enable') && $package->meta->server_type == 'server');
         $this->view->set('server_details', ($server_details ?? new stdClass()));
         $this->view->set('vars', ($vars ?? new stdClass()));
 
