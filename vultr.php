@@ -2148,12 +2148,18 @@ class Vultr extends Module
             $instance_key = 'baremetal-id';
         }
 
+        // Get the server details
+        $params = [
+            $instance_key => $service_fields->vultr_subid
+        ];
+        $this->log('api.vultr.com|list', serialize($params), 'input', true);
+
         if ($package->meta->server_type == 'server') {
-            $server_details = $this->parseResponse($vultr_api->listServers(['SUBID' => $service_fields->vultr_subid]));
+            $response = $this->parseResponse($vultr_api->get($params));
+            $server_details = $response->instance ?? (object) [];
         } else {
-            $server_details = $this->parseResponse(
-                $vultr_api->listBaremetal(['SUBID' => $service_fields->vultr_subid])
-            );
+            $response = $this->parseResponse($vultr_api->get($params));
+            $server_details = $response->bare_metal ?? (object) [];
         }
 
         // Set a warning about an in progress snapshot
@@ -2232,20 +2238,6 @@ class Vultr extends Module
                         break;
                 }
             }
-        }
-
-        // Get the server details
-        $params = [
-            $instance_key => $service_fields->vultr_subid
-        ];
-        $this->log('api.vultr.com|list', serialize($params), 'input', true);
-
-        if ($package->meta->server_type == 'server') {
-            $response = $this->parseResponse($vultr_api->get($params));
-            $server_details = $response->instance ?? (object) [];
-        } else {
-            $response = $this->parseResponse($vultr_api->get($params));
-            $server_details = $response->bare_metal ?? (object) [];
         }
 
         $this->view->set('module_row', $row);
