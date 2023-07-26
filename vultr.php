@@ -1597,6 +1597,10 @@ class Vultr extends Module
                     $this->log('api.vultr.com|app_change', serialize($params), 'input', true);
                     $result = $this->parseResponse($vultr_api->appChange($params));
                 }
+
+                // Check if the server was instance or bare_metal, then store updated default_password
+                $server = $result->instance ??  $result->bare_metal ?? (object) [];
+                $vars['vultr_password'] = $server->default_password;
             }
 
             // Only virtual machines supports automatic backups
@@ -1646,7 +1650,8 @@ class Vultr extends Module
             'vultr_subid',
             'vultr_template',
             'vultr_snapshots',
-            'vultr_enable_ipv6'
+            'vultr_enable_ipv6',
+            'vultr_password'
         ];
 
         foreach ($fields as $field) {
@@ -1657,7 +1662,7 @@ class Vultr extends Module
 
         // Return all the service fields
         $fields = [];
-        $encrypted_fields = [];
+        $encrypted_fields = ['vultr_password'];
         foreach ($service_fields as $key => $value) {
             $fields[] = ['key' => $key, 'value' => $value, 'encrypted' => (in_array($key, $encrypted_fields) ? 1 : 0)];
         }
@@ -2148,12 +2153,18 @@ class Vultr extends Module
             $instance_key = 'baremetal-id';
         }
 
+        // Get the server details
+        $params = [
+            $instance_key => $service_fields->vultr_subid
+        ];
+        $this->log('api.vultr.com|list', serialize($params), 'input', true);
+
         if ($package->meta->server_type == 'server') {
-            $server_details = $this->parseResponse($vultr_api->listServers(['SUBID' => $service_fields->vultr_subid]));
+            $response = $this->parseResponse($vultr_api->get($params));
+            $server_details = $response->instance ?? (object) [];
         } else {
-            $server_details = $this->parseResponse(
-                $vultr_api->listBaremetal(['SUBID' => $service_fields->vultr_subid])
-            );
+            $response = $this->parseResponse($vultr_api->get($params));
+            $server_details = $response->bare_metal ?? (object) [];
         }
 
         // Set a warning about an in progress snapshot
@@ -2197,7 +2208,22 @@ class Vultr extends Module
                             unset($params['hostname']);
                         }
 
-                        $this->parseResponse($vultr_api->reinstall($params));
+                        $this->log('api.vultr.com|reinstall', serialize($params), 'input', true);
+                        $result = $this->parseResponse($vultr_api->reinstall($params));
+
+                        // Check if the server was instance or bare_metal, then store updated default_password
+                        $server = $result->instance ??  $result->bare_metal ?? (object) [];
+
+                        $data = [
+                            'vultr_password' => $server->default_password,
+                        ];
+
+                        $this->Services->edit($service->id, $data);
+
+                        if ($this->Services->errors()) {
+                            $vars = (object) $post;
+                            $this->Input->setErrors($this->Services->errors());
+                        }
                         break;
                     case 'change_template':
                         if ($package->meta->set_template == 'client') {
@@ -2232,20 +2258,6 @@ class Vultr extends Module
                         break;
                 }
             }
-        }
-
-        // Get the server details
-        $params = [
-            $instance_key => $service_fields->vultr_subid
-        ];
-        $this->log('api.vultr.com|list', serialize($params), 'input', true);
-
-        if ($package->meta->server_type == 'server') {
-            $response = $this->parseResponse($vultr_api->get($params));
-            $server_details = $response->instance ?? (object) [];
-        } else {
-            $response = $this->parseResponse($vultr_api->get($params));
-            $server_details = $response->bare_metal ?? (object) [];
         }
 
         $this->view->set('module_row', $row);
