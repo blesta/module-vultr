@@ -1597,6 +1597,10 @@ class Vultr extends Module
                     $this->log('api.vultr.com|app_change', serialize($params), 'input', true);
                     $result = $this->parseResponse($vultr_api->appChange($params));
                 }
+
+                // Check if the server was instance or bare_metal, then store updated default_password
+                $server = $result->instance ??  $result->bare_metal ?? (object) [];
+                $vars['vultr_password'] = $server->default_password;
             }
 
             // Only virtual machines supports automatic backups
@@ -1646,7 +1650,8 @@ class Vultr extends Module
             'vultr_subid',
             'vultr_template',
             'vultr_snapshots',
-            'vultr_enable_ipv6'
+            'vultr_enable_ipv6',
+            'vultr_password'
         ];
 
         foreach ($fields as $field) {
@@ -1657,7 +1662,7 @@ class Vultr extends Module
 
         // Return all the service fields
         $fields = [];
-        $encrypted_fields = [];
+        $encrypted_fields = ['vultr_password'];
         foreach ($service_fields as $key => $value) {
             $fields[] = ['key' => $key, 'value' => $value, 'encrypted' => (in_array($key, $encrypted_fields) ? 1 : 0)];
         }
