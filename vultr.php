@@ -2208,7 +2208,22 @@ class Vultr extends Module
                             unset($params['hostname']);
                         }
 
-                        $this->parseResponse($vultr_api->reinstall($params));
+                        $this->log('api.vultr.com|reinstall', serialize($params), 'input', true);
+                        $result = $this->parseResponse($vultr_api->reinstall($params));
+
+                        // Check if the server was instance or bare_metal, then store updated default_password
+                        $server = $result->instance ??  $result->bare_metal ?? (object) [];
+
+                        $data = [
+                            'vultr_password' => $server->default_password,
+                        ];
+
+                        $this->Services->edit($service->id, $data);
+
+                        if ($this->Services->errors()) {
+                            $vars = (object) $post;
+                            $this->Input->setErrors($this->Services->errors());
+                        }
                         break;
                     case 'change_template':
                         if ($package->meta->set_template == 'client') {
