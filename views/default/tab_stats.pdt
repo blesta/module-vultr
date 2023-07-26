@@ -26,6 +26,10 @@
                     }
                 }
                 ?>
+                    <tr>
+                        <td><?php $this->_('Vultr.service_info.default_password'); ?></td>
+                        <td><?php echo (isset($service_fields->vultr_password) ? $this->Html->safe($service_fields->vultr_password) : '*****');?></td>
+                    </tr>
             </tbody>
         </table>
     </div>
