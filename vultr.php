@@ -706,9 +706,13 @@ class Vultr extends Module
                 || is_null($package)
                 || (in_array($app->id, $paid_apps) && ($package->meta->surcharge_templates ?? null) == 'allow')
             ) {
-                $templates['app-' . $app->id] = in_array($app->id, $paid_apps)
-                    ? Language::_('Vultr.get_templates.paid_template_name', true, $app->name)
-                    : $app->name;
+                if (!empty($app->image_id)) {
+                    $templates['image-' . $app->image_id] = $app->name;
+                } else {
+                    $templates['app-' . $app->id] = in_array($app->id, $paid_apps)
+                        ? Language::_('Vultr.get_templates.paid_template_name', true, $app->name)
+                        : $app->name;
+                }
             }
         }
 
@@ -2689,9 +2693,15 @@ class Vultr extends Module
         if (isset($template[0]) && $template[0] == 'os') {
             $osid = $template[1] ?? null;
             $appid = null;
-        } else {
-            $osid = 186;
+            $imageid = null;
+        } elseif (isset($template[0]) && $template[0] == 'app') {
+            $osid = null;
             $appid = $template[1] ?? null;
+            $imageid = null;
+        } else {
+            $osid = null;
+            $appid = null;
+            $imageid = $template[1] ?? null;
         }
 
         // Set the fields array depending on the server type
@@ -2704,6 +2714,7 @@ class Vultr extends Module
                 'backups' => ($vars['configoptions']['enable_backup'] ?? null) == 'enable' ? 'enabled' : 'disabled',
                 'label' => isset($vars['vultr_hostname']) ? strtolower($vars['vultr_hostname']) : null,
                 'app_id' => $appid,
+                'image_id' => $imageid,
                 'hostname' => isset($vars['vultr_hostname']) ? strtolower($vars['vultr_hostname']) : null
             ];
         } else {
@@ -2714,6 +2725,7 @@ class Vultr extends Module
                 'enable_ipv6' => ($vars['vultr_enable_ipv6'] == 'enable'),
                 'label' => isset($vars['vultr_hostname']) ? strtolower($vars['vultr_hostname']) : null,
                 'app_id' => $appid,
+                'image_id' => $imageid,
                 'hostname' => isset($vars['vultr_hostname']) ? strtolower($vars['vultr_hostname']) : null
             ];
         }
