@@ -12,7 +12,7 @@
             </thead>
             <tbody>
                 <?php
-                $keys = ['os', 'ram', 'disk', 'main_ip', 'vcpu_count', 'cpu_count', 'location', 'default_password', 'current_bandwidth_gb', 'allowed_bandwidth_gb', 'netmask_v4', 'gateway_v4'];
+                $keys = ['os', 'ram', 'disk', 'main_ip', 'vcpu_count', 'cpu_count', 'region', 'allowed_bandwidth', 'netmask_v4', 'gateway_v4'];
                 $i = 1;
                 foreach ($server_details as $key => $value) {
                     if (in_array($key, $keys)) {
@@ -26,6 +26,10 @@
                     }
                 }
                 ?>
+                    <tr>
+                        <td><?php $this->_('Vultr.service_info.default_password'); ?></td>
+                        <td><?php echo (isset($service_fields->vultr_password) ? $this->Html->safe($service_fields->vultr_password) : '*****');?></td>
+                    </tr>
             </tbody>
         </table>
     </div>
