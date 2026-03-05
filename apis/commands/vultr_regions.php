@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Vultr regions management.
  *

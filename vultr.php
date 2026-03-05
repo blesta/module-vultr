@@ -1,5 +1,7 @@
 <?php
+
 use Blesta\Core\Util\Validate\Server;
+
 /**
  * Vultr Module.
  *
@@ -186,11 +188,7 @@ class Vultr extends Module
         }
 
         if (empty($subids)) {
-            if ($service->package->meta->server_type == 'server') {
-                $subids = (array) $api->legacyRequest('/server/list');
-            } else {
-                $subids = (array) $api->legacyRequest('/baremetal/list');
-            }
+            $subids = $service->package->meta->server_type == 'server' ? (array) $api->legacyRequest('/server/list') : (array) $api->legacyRequest('/baremetal/list');
 
             if (Configure::get('Caching.on') && is_writable(CACHEDIR) && !empty($subids)) {
                 try {
@@ -200,7 +198,7 @@ class Vultr extends Module
                         strtotime(Configure::get('Blesta.cache_length')) - time(),
                         Configure::get('Blesta.company_id') . DS . 'modules' . DS . 'vultr' . DS
                     );
-                } catch (Exception $e) {
+                } catch (\Throwable $e) {
                     // Write to cache failed, so disable caching
                     Configure::set('Caching.on', false);
                 }
@@ -236,7 +234,7 @@ class Vultr extends Module
                             ($remote_instance->os_id == ($os_template[1] ?? '') && ($os_template[0] ?? '') == 'os')
                             || ($remote_instance->app_id == ($os_template[1] ?? '') && ($os_template[0] ?? '') == 'app')
                         )
-                    ){
+                    ) {
                         $remote_service = $remote_instance;
                         break;
                     }
@@ -254,7 +252,7 @@ class Vultr extends Module
                             ($remote_instance->os_id == ($os_template[1] ?? '') && ($os_template[0] ?? '') == 'os')
                             || ($remote_instance->app_id == ($os_template[1] ?? '') && ($os_template[0] ?? '') == 'app')
                         )
-                    ){
+                    ) {
                         $remote_service = $remote_instance;
                         break;
                     }
@@ -443,7 +441,7 @@ class Vultr extends Module
             $fields->fieldSelect(
                 'meta[server_type]',
                 $this->getServerTypes(),
-                (isset($vars->meta['server_type']) ? $vars->meta['server_type'] : null),
+                ($vars->meta['server_type'] ?? null),
                 ['id' => 'vultr_instances_type']
             )
         );
@@ -458,7 +456,7 @@ class Vultr extends Module
             $fields->fieldSelect(
                 'meta[baremetal_plan]',
                 $baremetal_plans,
-                (isset($vars->meta['baremetal_plan']) ? $vars->meta['baremetal_plan'] : null),
+                ($vars->meta['baremetal_plan'] ?? null),
                 ['id' => 'vultr_baremetal_plan']
             )
         );
@@ -473,7 +471,7 @@ class Vultr extends Module
             $fields->fieldSelect(
                 'meta[server_plan]',
                 $server_plans,
-                (isset($vars->meta['server_plan']) ? $vars->meta['server_plan'] : null),
+                ($vars->meta['server_plan'] ?? null),
                 ['id' => 'vultr_instances_plan']
             )
         );
@@ -487,7 +485,7 @@ class Vultr extends Module
             $fields->fieldRadio(
                 'meta[set_template]',
                 'admin',
-                (isset($vars->meta['set_template']) ? $vars->meta['set_template'] : 'admin') == 'admin',
+                ($vars->meta['set_template'] ?? 'admin') == 'admin',
                 ['id' => 'vultr_admin_set_template'],
                 $admin_set_template_label
             )
@@ -498,7 +496,7 @@ class Vultr extends Module
             $fields->fieldRadio(
                 'meta[set_template]',
                 'client',
-                (isset($vars->meta['set_template']) ? $vars->meta['set_template'] : null) == 'client',
+                ($vars->meta['set_template'] ?? null) == 'client',
                 ['id' => 'vultr_client_set_template'],
                 $client_set_template_label
             )
@@ -515,7 +513,7 @@ class Vultr extends Module
             $fields->fieldSelect(
                 'meta[template]',
                 $server_templates,
-                (isset($vars->meta['template']) ? $vars->meta['template'] : null),
+                ($vars->meta['template'] ?? null),
                 ['id' => 'vultr_template']
             )
         );
@@ -531,7 +529,7 @@ class Vultr extends Module
             $fields->fieldRadio(
                 'meta[surcharge_templates]',
                 'allow',
-                (isset($vars->meta['surcharge_templates']) ? $vars->meta['surcharge_templates'] : 'allow') == 'allow',
+                ($vars->meta['surcharge_templates'] ?? 'allow') == 'allow',
                 ['id' => 'vultr_allow_surcharge_templates'],
                 $allow_surcharge_templates_label
             )
@@ -544,7 +542,7 @@ class Vultr extends Module
             $fields->fieldRadio(
                 'meta[surcharge_templates]',
                 'disallow',
-                (isset($vars->meta['surcharge_templates']) ? $vars->meta['surcharge_templates'] : null) == 'disallow',
+                ($vars->meta['surcharge_templates'] ?? null) == 'disallow',
                 ['id' => 'vultr_disallow_surcharge_templates'],
                 $disallow_surcharge_templates_label
             )
@@ -690,7 +688,8 @@ class Vultr extends Module
                 continue;
             }
 
-            if ($os->family !== 'windows'
+            if (
+                $os->family !== 'windows'
                 || is_null($package)
                 || ($os->family == 'windows' && ($package->meta->surcharge_templates ?? null) == 'allow')
             ) {
@@ -702,7 +701,8 @@ class Vultr extends Module
 
         $paid_apps = [35, 36, 38];
         foreach ($result_app->applications ?? [] as $app) {
-            if (!in_array($app->id, $paid_apps)
+            if (
+                !in_array($app->id, $paid_apps)
                 || is_null($package)
                 || (in_array($app->id, $paid_apps) && ($package->meta->surcharge_templates ?? null) == 'allow')
             ) {
@@ -752,11 +752,7 @@ class Vultr extends Module
         // Check availability in the locations
         if (!is_null($package)) {
             foreach ($locations as $region_id => $location) {
-                if ($package->meta->server_type == 'server') {
-                    $availability = $regions_api->availabilityVc2(['region-id' => $region_id])->response();
-                } else {
-                    $availability = $regions_api->availabilityBaremetal(['region-id' => $region_id])->response();
-                }
+                $availability = $package->meta->server_type == 'server' ? $regions_api->availabilityVc2(['region-id' => $region_id])->response() : $regions_api->availabilityBaremetal(['region-id' => $region_id])->response();
 
                 if (empty($availability)) {
                     unset($locations[$region_id]);
@@ -777,7 +773,7 @@ class Vultr extends Module
                     strtotime(Configure::get('Blesta.cache_length')) - time(),
                     Configure::get('Blesta.company_id') . DS . 'modules' . DS . 'vultr' . DS
                 );
-            } catch (Exception $e) {
+            } catch (\Throwable $e) {
                 // Write to cache failed, so disable caching
                 Configure::set('Caching.on', false);
             }
@@ -889,6 +885,14 @@ class Vultr extends Module
             }
         }
 
+        // Fetch module
+        Loader::loadModels($this, ['ModuleManager']);
+        $module = $this->ModuleManager->getByClass(
+            \Illuminate\Support\Str::snake(get_class($this)),
+            Configure::get('Blesta.company_id')
+        );
+        $module = ($module[0] ?? []);
+        $this->view->set('module', (object) $module);
         $this->view->set('vars', (object) $vars);
 
         return $this->view->fetch();
@@ -921,6 +925,14 @@ class Vultr extends Module
             }
         }
 
+        // Fetch module
+        Loader::loadModels($this, ['ModuleManager']);
+        $module = $this->ModuleManager->getByClass(
+            \Illuminate\Support\Str::snake(get_class($this)),
+            Configure::get('Blesta.company_id')
+        );
+        $module = ($module[0] ?? []);
+        $this->view->set('module', (object) $module);
         $this->view->set('vars', (object) $vars);
 
         return $this->view->fetch();
@@ -1219,7 +1231,7 @@ class Vultr extends Module
         Loader::loadHelpers($this, ['Html']);
 
         // Fetch the module row available for this package
-        $module_row = $this->getModuleRow((isset($package->module_row) ? $package->module_row : 0));
+        $module_row = $this->getModuleRow(($package->module_row ?? 0));
 
         // Get the available templates
         $templates = $this->getTemplates($module_row, $package);
@@ -1295,7 +1307,8 @@ class Vultr extends Module
         $service_fields = $this->serviceFieldsToObject($service->fields);
 
         // Template should only be checked if it has changed
-        if (!isset($service_fields->vultr_template)
+        if (
+            !isset($service_fields->vultr_template)
             || !isset($vars['vultr_template'])
             || $service_fields->vultr_template == $vars['vultr_template']
         ) {
@@ -1429,7 +1442,7 @@ class Vultr extends Module
                     $result = $this->parseResponse($vultr_api->create($params));
                     $server = $result->instance ??  $result->bare_metal ?? (object) [];
                 }
-            } catch (Exception $e) {
+            } catch (\Throwable $e) {
                 $this->Input->setErrors(
                     ['api' => ['internal' => Language::_('Vultr.!error.api.internal', true)]]
                 );
@@ -1571,32 +1584,24 @@ class Vultr extends Module
 
                 // Change the server template
                 if (is_null($appid)) {
-                    if ($package->meta->server_type == 'server') {
-                        $params = [
+                    $params = $package->meta->server_type == 'server' ? [
                             'instance-id' => $vars['vultr_subid'],
                             'os_id' => $osid
-                        ];
-                    } else {
-                        $params = [
+                        ] : [
                             'baremetal-id' => $vars['vultr_subid'],
                             'os_id' => $osid
                         ];
-                    }
 
                     $this->log('api.vultr.com|os_change', serialize($params), 'input', true);
                     $result = $this->parseResponse($vultr_api->osChange($params));
                 } else {
-                    if ($package->meta->server_type == 'server') {
-                        $params = [
+                    $params = $package->meta->server_type == 'server' ? [
                             'instance-id' => $vars['vultr_subid'],
                             'app_id' => $appid
-                        ];
-                    } else {
-                        $params = [
+                        ] : [
                             'baremetal-id' => $vars['vultr_subid'],
                             'app_id' => $appid
                         ];
-                    }
 
                     $this->log('api.vultr.com|app_change', serialize($params), 'input', true);
                     $result = $this->parseResponse($vultr_api->appChange($params));
@@ -1614,7 +1619,8 @@ class Vultr extends Module
                     }
                 }
 
-                if ($vars['configoptions']['enable_backup'] == 'enable'
+                if (
+                    $vars['configoptions']['enable_backup'] == 'enable'
                     && (!$enable_backup || $enable_backup->option_value != 'enable')
                 ) {
                     // Enable daily backups
@@ -1628,7 +1634,8 @@ class Vultr extends Module
                     $params['type'] = 'daily';
                     $this->log('api.vultr.com|backup_daily', serialize($params), 'input', true);
                     $this->parseResponse($vultr_api->backupSetSchedule($params));
-                } elseif ($vars['configoptions']['enable_backup'] != 'enable'
+                } elseif (
+                    $vars['configoptions']['enable_backup'] != 'enable'
                     && (!$enable_backup || $enable_backup->option_value != 'disable')
                 ) {
                     // Disable daily backups
@@ -2152,13 +2159,9 @@ class Vultr extends Module
             $instance_key = 'baremetal-id';
         }
 
-        if ($package->meta->server_type == 'server') {
-            $server_details = $this->parseResponse($vultr_api->listServers(['SUBID' => $service_fields->vultr_subid]));
-        } else {
-            $server_details = $this->parseResponse(
-                $vultr_api->listBaremetal(['SUBID' => $service_fields->vultr_subid])
-            );
-        }
+        $server_details = $package->meta->server_type == 'server' ? $this->parseResponse($vultr_api->listServers(['SUBID' => $service_fields->vultr_subid])) : $this->parseResponse(
+            $vultr_api->listBaremetal(['SUBID' => $service_fields->vultr_subid])
+        );
 
         // Set a warning about an in progress snapshot
         $server_locked = isset($server_details->server_state) && $server_details->server_state == 'locked';
@@ -2665,7 +2668,7 @@ class Vultr extends Module
             $result = $account_api->info()->response();
 
             return isset($result->account->email);
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             // Trap any errors encountered, could not validate connection
         }
 

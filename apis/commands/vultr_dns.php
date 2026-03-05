@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Vultr DNS management.
  *

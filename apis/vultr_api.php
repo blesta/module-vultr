@@ -1,4 +1,5 @@
 <?php
+
 use Blesta\Core\Util\Common\Traits\Container;
 
 require_once dirname(__FILE__) . DIRECTORY_SEPARATOR . 'vultr_response.php';
@@ -134,7 +135,7 @@ class VultrApi
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, ['API-Key: ' . $this->api_key]);
         curl_setopt($ch, CURLOPT_URL, 'https://api.vultr.com/v1/' . trim($method, '/'));
-                
+
         if (Configure::get('Blesta.curl_verify_ssl')) {
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
             curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
@@ -142,7 +143,7 @@ class VultrApi
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
             curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
         }
-        
+
         $response = (object) json_decode(curl_exec($ch));
         curl_close($ch);
 

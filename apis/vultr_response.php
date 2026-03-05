@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Vultr API v2 response handler
  *

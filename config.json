@@ -1,5 +1,5 @@
 {
-    "version": "2.0.1",
+    "version": "3.0.0",
     "name": "Vultr.name",
     "description": "Vultr.description",
     "authors": [
@@ -20,8 +20,17 @@
         "row_key": "account_name"
     },
     "email_tags": {
-        "module": ["server_name", "host_name"],
-        "package": ["server_type"],
-        "service": ["vultr_hostname", "vultr_location"]
-    }
+        "module": [
+            "server_name",
+            "host_name"
+        ],
+        "package": [
+            "server_type"
+        ],
+        "service": [
+            "vultr_hostname",
+            "vultr_location"
+        ]
+    },
+    "icon": "bi-cloud"
 }

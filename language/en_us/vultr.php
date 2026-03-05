@@ -16,6 +16,8 @@ $lang['Vultr.tab_client_stats'] = 'Statistics';
 $lang['Vultr.tab_client_snapshots'] = 'Snapshots';
 $lang['Vultr.tab_client_backups'] = 'Backups';
 
+$lang['Vultr.back_to_manage'] = 'Back';
+
 // Module management
 $lang['Vultr.add_module_row'] = 'Add Account';
 $lang['Vultr.manage.module_rows_title'] = 'Accounts';
