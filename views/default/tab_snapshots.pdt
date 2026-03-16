@@ -1,7 +1,7 @@
 <?php /** @var View $this **/ ?>
 
-<h6 class="form-section-header first"><?php $this->_('Vultr.tab_snapshots.snapshots'); ?></h6>
-<div class="pad">
+<h6 class="form-section-header"><?php $this->_('Vultr.tab_snapshots.snapshots'); ?></h6>
+<div class="mb-3">
     <?php if (!empty($snapshots)) {
 
         $this->Form->create();
@@ -93,5 +93,6 @@
         'Vultr.tab_snapshots.field_create_submit',
     ); ?></span></a>
 </div>
-                    <?php $this->Form->end();
+                    <?php
+$this->Form->end();
 ?>

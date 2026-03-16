@@ -1,7 +1,7 @@
 <?php /** @var View $this **/ ?>
 
-<h6 class="form-section-header first"><?php $this->_('Vultr.tab_backups.backups'); ?></h6>
-<div class="pad">
+<h6 class="form-section-header"><?php $this->_('Vultr.tab_backups.backups'); ?></h6>
+<div class="mb-3">
     <?php if (($service_options->enable_backup ?? null) == 'enable') {
         $this->Form->create();
         $this->Form->fieldHidden('backupid', '', ['id' => 'backupid']);

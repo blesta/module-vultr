@@ -1,6 +1,6 @@
 <?php /** @var View $this **/ ?>
 
-<h6 class="form-section-header first"><?php $this->_('Vultr.tab_actions.status_title'); ?></h6>
+<h6 class="form-section-header"><?php $this->_('Vultr.tab_actions.status_title'); ?></h6>
 
 <?php if (($server_details->server_status ?? null) == 'locked') {
     $status_class = 'warning';
@@ -12,7 +12,7 @@
     $status_class = 'danger';
     $status = 'offline';
 } ?>
-<div class="pad" id="vultr_status_badge">
+<div class="mb-3" id="vultr_status_badge">
     <span class="badge bg-<?php echo isset($status_class) ? $this->Html->safe($status_class) : null; ?>">
         <i class="bi bi-lightbulb"></i> <?php $this->_(
             'Vultr.tab_client_actions.status_' . (isset($status) ? $this->Html->safe($status) : null),
@@ -21,7 +21,7 @@
 </div>
 
 <h6 class="form-section-header"><?php $this->_('Vultr.tab_actions.server_title'); ?></h6>
-<div class="pad">
+<div class="mb-3">
     <div class="row options" id="vultr_actions">
         <div class="col-md-4">
             <?php
@@ -160,7 +160,7 @@
 
         function setVultrInterval(refresh_rate, old_action_data) {
             var interval = setInterval(function() {
-                $(this).blestaRequest("GET",
+                blestaRequest("GET",
                     '<?php echo $this->Html->safe(
                         $this->base_uri .
                             'clients/servicetab/' .

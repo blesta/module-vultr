@@ -1,7 +1,7 @@
 <?php /** @var View $this **/ ?>
 
-<h6 class="form-section-header first"><?php $this->_('Vultr.tab_stats.server_information'); ?></h6>
-<div class="pad">
+<h6 class="form-section-header"><?php $this->_('Vultr.tab_stats.server_information'); ?></h6>
+<div class="mb-3">
     <table class="table">
         <thead>
             <tr>
