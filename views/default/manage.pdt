@@ -10,6 +10,7 @@ $link_buttons = [
 
 $this->Widget->clear();
 $this->Widget->setLinkButtons($link_buttons);
+$this->Widget->setBodyWrapper(false);
 
 $this->Widget->create(
     $this->_(
@@ -20,8 +21,6 @@ $this->Widget->create(
     ['id' => 'manage_vultr'],
 );
 ?>
-
-<h6 class="form-section-header"><?php $this->_('Vultr.manage.module_rows_title'); ?></h6>
         <?php
         $num_rows = count(isset($module->rows) ? $module->rows : []);
         if ($num_rows > 0) { ?>
@@ -78,11 +77,3 @@ $this->Widget->create(
         ?>
 
                 <?php $this->Widget->end(); ?>
-
-<script type="text/javascript">
-    document.addEventListener('DOMContentLoaded', function() {
-        if (typeof blestaModalConfirm === 'function') {
-            blestaModalConfirm('.modal-confirm-delete');
-        }
-    });
-</script>
