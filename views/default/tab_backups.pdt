@@ -26,11 +26,11 @@
                 <td><?php echo isset($backup->date_created) ? $this->Html->safe($backup->date_created) : null; ?></td>
                 <td><?php echo isset($backup->description) ? $this->Html->safe($backup->description) : null; ?></td>
                 <td>
-                    <a class="restore-backup submit" href="#" data-id="<?php echo isset($backup->id)
-                        ? $this->Html->safe($backup->id)
-                        : null; ?>">
-                        <?php $this->_('Vultr.tab_backups.restore_backup'); ?>
-                    </a>
+                    <button type="button" class="btn btn-sm btn-outline-secondary restore-backup submit"
+                        data-id="<?php echo isset($backup->id) ? $this->Html->safe($backup->id) : null; ?>"
+                        title="<?php $this->_('Vultr.tab_backups.restore_backup'); ?>">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </button>
                 </td>
             </tr>
                     <?php $i++;
@@ -40,7 +40,7 @@
     </table>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('a.restore-backup').forEach(function(el) {
+            document.querySelectorAll('.restore-backup').forEach(function(el) {
                 el.addEventListener('click', function() {
                     document.getElementById('backupid').value = this.getAttribute('data-id');
                     document.getElementById('action').value = 'restore';

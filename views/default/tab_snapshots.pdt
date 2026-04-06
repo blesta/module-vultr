@@ -25,14 +25,18 @@
                 <td><?php echo isset($snapshot->description) ? $this->Html->safe($snapshot->description) : null; ?></td>
                 <td><?php echo ucwords($this->Html->safe($snapshot->status)); ?></td>
                 <td>
-                    <a class="restore-snapshot submit restore-snapshot" href="#" data-id="<?php echo isset(
-                        $snapshot->id,
-                    )
-                        ? $this->Html->safe($snapshot->id)
-                        : null; ?>"><?php $this->_('Vultr.tab_snapshots.restore_snapshot'); ?></a>,
-                    <a class="manage submit remove-snapshot" href="#" data-id="<?php echo isset($snapshot->id)
-                        ? $this->Html->safe($snapshot->id)
-                        : null; ?>"><?php $this->_('Vultr.tab_snapshots.remove_snapshot'); ?></a>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary restore-snapshot submit"
+                            data-id="<?php echo isset($snapshot->id) ? $this->Html->safe($snapshot->id) : null; ?>"
+                            title="<?php $this->_('Vultr.tab_snapshots.restore_snapshot'); ?>">
+                            <i class="bi bi-arrow-counterclockwise"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger remove-snapshot submit"
+                            data-id="<?php echo isset($snapshot->id) ? $this->Html->safe($snapshot->id) : null; ?>"
+                            title="<?php $this->_('Vultr.tab_snapshots.remove_snapshot'); ?>">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
                 </td>
             </tr>
                     <?php $i++;
@@ -43,13 +47,13 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('a.restore-snapshot').forEach(function(el) {
+            document.querySelectorAll('.restore-snapshot').forEach(function(el) {
                 el.addEventListener('click', function() {
                     document.getElementById('snapshotid').value = this.getAttribute('data-id');
                     document.getElementById('action').value = 'restore';
                 });
             });
-            document.querySelectorAll('a.remove-snapshot').forEach(function(el) {
+            document.querySelectorAll('.remove-snapshot').forEach(function(el) {
                 el.addEventListener('click', function() {
                     document.getElementById('snapshotid').value = this.getAttribute('data-id');
                     document.getElementById('action').value = 'remove';
