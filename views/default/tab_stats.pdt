@@ -32,7 +32,8 @@
                 <td><?php $this->_('Vultr.tab_stats.info.' . $key); ?></td>
                 <td><?php echo isset($value) ? $this->Html->safe($value) : null; ?></td>
             </tr>
-                    <?php $i++;}
+                    <?php $i++;
+                }
             }
             ?>
         </tbody>

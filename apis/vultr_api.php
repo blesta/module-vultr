@@ -24,6 +24,11 @@ class VultrApi
     private $api_key;
 
     /**
+     * @var mixed The logger instance
+     */
+    private $logger;
+
+    /**
      * @var array An array representing the last request made
      */
     private $last_request = ['url' => null, 'params' => null];

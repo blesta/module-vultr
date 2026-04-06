@@ -2659,17 +2659,23 @@ class Vultr extends Module
      */
     public function validateConnection($api_key)
     {
+        $this->log('api.vultr.com|account_info', serialize([]), 'input', true);
+
         try {
             $api = $this->getApi($api_key);
             $api->loadCommand('vultr_account');
 
             $account_api = new VultrAccount($api);
 
-            $result = $account_api->info()->response();
+            $response = $account_api->info();
+            $result = $response->response();
+            $success = isset($result->account->email);
 
-            return isset($result->account->email);
+            $this->log('api.vultr.com', serialize($result), 'output', $success);
+
+            return $success;
         } catch (\Throwable $e) {
-            // Trap any errors encountered, could not validate connection
+            $this->log('api.vultr.com', serialize(['error' => $e->getMessage()]), 'output', false);
         }
 
         return false;
