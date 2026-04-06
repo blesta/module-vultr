@@ -364,51 +364,46 @@ class Vultr extends Module
 
         $fields->setHtml("
             <script type=\"text/javascript\">
-                $(document).ready(function() {
+                (function() {
                     // Set whether to show or hide the plans option, depending on the server type
-                    $('#vultr_baremetal_plan').closest('li').hide();
-                    $('#vultr_instances_plan').closest('li').hide();
+                    var baremetalPlan = document.getElementById('vultr_baremetal_plan');
+                    var instancesPlan = document.getElementById('vultr_instances_plan');
+                    var instancesType = document.getElementById('vultr_instances_type');
 
-                    if ($('#vultr_instances_type').val() == 'server') {
-                        $('#vultr_instances_plan').closest('li').show();
-                        $('#vultr_baremetal_plan').closest('li').hide();
-                    } else {
-                        $('#vultr_baremetal_plan').closest('li').show();
-                        $('#vultr_instances_plan').closest('li').hide();
+                    function updatePlanVisibility() {
+                        if (instancesType.value == 'server') {
+                            instancesPlan.closest('.mb-3').style.display = '';
+                            baremetalPlan.closest('.mb-3').style.display = 'none';
+                        } else {
+                            baremetalPlan.closest('.mb-3').style.display = '';
+                            instancesPlan.closest('.mb-3').style.display = 'none';
+                        }
                     }
 
-                    $('#vultr_instances_type').change(function() {
-                        if ($(this).val() == 'server') {
-                            $('#vultr_instances_plan').closest('li').show();
-                            $('#vultr_baremetal_plan').closest('li').hide();
-                        } else {
-                            $('#vultr_baremetal_plan').closest('li').show();
-                            $('#vultr_instances_plan').closest('li').hide();
-                        }
-                    });
+                    updatePlanVisibility();
+                    instancesType.addEventListener('change', updatePlanVisibility);
 
                     // Set whether to show or hide the template option
-                    $('select[name=\"meta[template]\"]').closest('li').hide();
-                    $('input[name=\"meta[surcharge_templates]\"]').closest('li').hide();
+                    var templateSelect = document.getElementById('vultr_template');
+                    var surchargeInput = document.querySelector('input[name=\"meta[surcharge_templates]\"]');
+                    var setTemplateInputs = document.querySelectorAll('input[name=\"meta[set_template]\"]');
 
-                    if ($('input[name=\"meta[set_template]\"]:checked').val() == 'admin') {
-                        $('select[name=\"meta[template]\"]').closest('li').show();
-                        $('input[name=\"meta[surcharge_templates]\"]').closest('li').hide();
-                    } else {
-                        $('select[name=\"meta[template]\"]').closest('li').hide();
-                        $('input[name=\"meta[surcharge_templates]\"]').closest('li').show();
+                    function updateTemplateVisibility() {
+                        var checked = document.querySelector('input[name=\"meta[set_template]\"]:checked');
+                        if (checked && checked.value == 'admin') {
+                            templateSelect.closest('.mb-3').style.display = '';
+                            surchargeInput.closest('.mb-3').style.display = 'none';
+                        } else {
+                            templateSelect.closest('.mb-3').style.display = 'none';
+                            surchargeInput.closest('.mb-3').style.display = '';
+                        }
                     }
 
-                    $('input[name=\"meta[set_template]\"]').change(function() {
-                        if ($(this).val() == 'admin') {
-                            $('select[name=\"meta[template]\"]').closest('li').show();
-                            $('input[name=\"meta[surcharge_templates]\"]').closest('li').hide();
-                        } else {
-                            $('select[name=\"meta[template]\"]').closest('li').hide();
-                            $('input[name=\"meta[surcharge_templates]\"]').closest('li').show();
-                        }
+                    updateTemplateVisibility();
+                    setTemplateInputs.forEach(function(input) {
+                        input.addEventListener('change', updateTemplateVisibility);
                     });
-                });
+                })();
             </script>
         ");
 
