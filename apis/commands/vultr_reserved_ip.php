@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Vultr reserved IPs management.
  *

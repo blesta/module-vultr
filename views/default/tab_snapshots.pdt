@@ -1,89 +1,102 @@
-    <div class="title_row first">
-        <h3><?php $this->_('Vultr.tab_snapshots.snapshots'); ?></h3>
-    </div>
-    <div class="pad">
-        <?php
-        if (!empty($snapshots)) {
-            $this->Form->create();
-            $this->Form->fieldHidden('snapshotid', '', ['id' => 'snapshotid']);
-            $this->Form->fieldHidden('action', '', ['id' => 'action']);
+<?php /** @var View $this **/ ?>
+
+<h6 class="form-section-header"><?php $this->_('Vultr.tab_snapshots.snapshots'); ?></h6>
+<div class="mb-3">
+    <?php if (!empty($snapshots)) {
+        $this->Form->create();
+        $this->Form->fieldHidden('snapshotid', '', ['id' => 'snapshotid']);
+        $this->Form->fieldHidden('action', '', ['id' => 'action']);
+        ?>
+    <table class="table">
+        <thead>
+            <tr>
+                <th><span><?php $this->_('Vultr.tab_snapshots.heading_row_snapshot_id'); ?></span></th>
+                <th><span><?php $this->_('Vultr.tab_snapshots.heading_row_description'); ?></span></th>
+                <th><span><?php $this->_('Vultr.tab_snapshots.heading_row_status'); ?></span></th>
+                <th><span><?php $this->_('Vultr.tab_snapshots.heading_row_options'); ?></span></th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php
+            $i = 0;
+            foreach ($snapshots as $snapshot) { ?>
+            <tr>
+                <td><strong><?php echo isset($snapshot->id) ? $this->Html->safe($snapshot->id) : null; ?></strong></td>
+                <td><?php echo isset($snapshot->description) ? $this->Html->safe($snapshot->description) : null; ?></td>
+                <td><?php echo ucwords($this->Html->safe($snapshot->status)); ?></td>
+                <td>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary restore-snapshot submit"
+                            data-id="<?php echo isset($snapshot->id) ? $this->Html->safe($snapshot->id) : null; ?>"
+                            title="<?php $this->_('Vultr.tab_snapshots.restore_snapshot'); ?>">
+                            <i class="bi bi-arrow-counterclockwise"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger remove-snapshot submit"
+                            data-id="<?php echo isset($snapshot->id) ? $this->Html->safe($snapshot->id) : null; ?>"
+                            title="<?php $this->_('Vultr.tab_snapshots.remove_snapshot'); ?>">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+                    <?php $i++;
+            }
             ?>
-        <table class="table">
-            <tbody>
-                <tr class="heading_row">
-                    <td><span><?php $this->_('Vultr.tab_snapshots.heading_row_snapshot_id'); ?></span></td>
-                    <td><span><?php $this->_('Vultr.tab_snapshots.heading_row_description'); ?></span></td>
-                    <td><span><?php $this->_('Vultr.tab_snapshots.heading_row_status'); ?></span></td>
-                    <td class="last"><span><?php $this->_('Vultr.tab_snapshots.heading_row_options'); ?></span></td>
-                </tr>
-                <?php
-                $i = 0;
-                foreach ($snapshots as $snapshot) {
-                ?>
-                <tr<?php echo ($i % 2 == 1) ? ' class="odd_row"' : ''; ?>>
-                    <td><strong><?php echo (isset($snapshot->id) ? $this->Html->safe($snapshot->id) : null); ?></strong></td>
-                    <td><?php echo (isset($snapshot->description) ? $this->Html->safe($snapshot->description) : null); ?></td>
-                    <td><?php echo ucwords($this->Html->safe($snapshot->status)); ?></td>
-                    <td>
-                        <a class="restore-snapshot submit restore-snapshot" href="#" data-id="<?php echo (isset($snapshot->id) ? $this->Html->safe($snapshot->id) : null); ?>"><?php $this->_('Vultr.tab_snapshots.restore_snapshot'); ?></a>,
-                        <a class="manage submit remove-snapshot" href="#" data-id="<?php echo (isset($snapshot->id) ? $this->Html->safe($snapshot->id) : null); ?>"><?php $this->_('Vultr.tab_snapshots.remove_snapshot'); ?></a>
-                    </td>
-                </tr>
-                    <?php
-                    $i++;
-                }
-                ?>
-            </tbody>
-        </table>
+        </tbody>
+    </table>
 
-        <script type="text/javascript">
-            $(document).ready(function() {
-                $('a.restore-snapshot').on('click', function() {
-                    $('#snapshotid').val($(this).attr('data-id'));
-                    $('#action').val('restore');
-                });
-
-                $('a.remove-snapshot').on('click', function() {
-                    $('#snapshotid').val($(this).attr('data-id'));
-                    $('#action').val('remove');
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.restore-snapshot').forEach(function(el) {
+                el.addEventListener('click', function() {
+                    document.getElementById('snapshotid').value = this.getAttribute('data-id');
+                    document.getElementById('action').value = 'restore';
                 });
             });
-        </script>
-            <?php
-            $this->Form->end();
-        } else {
+            document.querySelectorAll('.remove-snapshot').forEach(function(el) {
+                el.addEventListener('click', function() {
+                    document.getElementById('snapshotid').value = this.getAttribute('data-id');
+                    document.getElementById('action').value = 'remove';
+                });
+            });
+        });
+    </script>
+                    <?php $this->Form->end();
+    } else {
         ?>
-        <div class="empty_section">
-            <div class="empty_box"><?php $this->_('Vultr.tab_snapshots.no_snapshots'); ?></div>
-        </div>
+    <div class="text-center py-5 text-muted">
+        <i class="bi bi-inbox" style="font-size: 3rem; opacity: 0.3;"></i>
+        <p class="mt-3 mb-0"><?php $this->_('Vultr.tab_snapshots.no_snapshots'); ?></p>
+    </div>
         <?php
-        }
-        ?>
-    </div>
+    } ?>
+</div>
 
+                    <?php
+                    $this->Form->create();
+                    $this->Form->fieldHidden('action', 'create');
+                    ?>
+<h6 class="form-section-header"><?php $this->_('Vultr.tab_snapshots.heading_create'); ?></h6>
+<div>
+    <div class="mb-3">
     <?php
-    $this->Form->create();
-    $this->Form->fieldHidden('action', 'create');
+    $this->Form->label($this->_('Vultr.tab_snapshots.field_description', true), 'description', [
+        'class' => 'form-label',
+    ]);
+    $this->Form->fieldText('description', $vars->description ?? null, [
+        'id' => 'description',
+        'class' => 'form-control',
+        'placeholder' => $this->_('Vultr.tab_snapshots.field_description', true),
+    ]);
     ?>
-    <div class="title_row">
-        <h3><?php $this->_('Vultr.tab_snapshots.heading_create'); ?></h3>
     </div>
-    <div class="pad">
-        <ul>
-            <li>
-                <?php
-                $this->Form->label($this->_('Vultr.tab_snapshots.field_description', true), 'description');
-                $this->Form->fieldText('description', (isset($vars->description) ? $vars->description : null), ['id' => 'description', 'class' => 'form-control', 'placeholder' => $this->_('Vultr.tab_snapshots.field_description', true)]);
-                ?>
-            </li>
-        </ul>
-    </div>
+</div>
 
-    <div class="pad">
-        <div class="links_row">
-            <a class="btn btn-primary submit pull-right" href="#"><span><?php $this->_('Vultr.tab_snapshots.field_create_submit'); ?></span></a>
-        </div>
-    </div>
-    <?php
-    $this->Form->end();
-    ?>
+<div class="d-flex justify-content-end">
+    <a class="btn btn-primary submit" href="#"><span><?php $this->_(
+        'Vultr.tab_snapshots.field_create_submit',
+    ); ?></span></a>
+</div>
+                    <?php
+$this->Form->end();
+?>

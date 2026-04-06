@@ -1,65 +1,66 @@
-    <div class="title_row first">
-        <h3><?php $this->_('Vultr.tab_backups.backups'); ?></h3>
-    </div>
-    <div class="pad">
-        <?php
-        if (($service_options->enable_backup ?? null) == 'enable') {
-            $this->Form->create();
-            $this->Form->fieldHidden('backupid', '', ['id' => 'backupid']);
-            $this->Form->fieldHidden('action', '', ['id' => 'action']);
+<?php /** @var View $this **/ ?>
 
-            if (!empty($backups)) {
-                ?>
-        <table class="table">
-            <tbody>
-                <tr class="heading_row">
-                    <td><?php $this->_('Vultr.tab_backups.heading_row_backup_id'); ?></td>
-                    <td><?php $this->_('Vultr.tab_backups.heading_row_date_created'); ?></td>
-                    <td><?php $this->_('Vultr.tab_backups.heading_row_description'); ?></td>
-                    <td><?php $this->_('Vultr.tab_backups.heading_row_options'); ?></td>
-                </tr>
-                <?php
-                $i = 0;
-                foreach ($backups as $backup) {
-                    ?>
-                <tr<?php echo ($i % 2 == 1) ? ' class="odd_row"' : ''; ?>>
-                    <td><strong><?php echo (isset($backup->id) ? $this->Html->safe($backup->id) : null); ?></strong></td>
-                    <td><?php echo (isset($backup->date_created) ? $this->Html->safe($backup->date_created) : null); ?></td>
-                    <td><?php echo (isset($backup->description) ? $this->Html->safe($backup->description) : null); ?></td>
-                    <td>
-                        <a class="restore-backup submit" href="#" data-id="<?php echo (isset($backup->id) ? $this->Html->safe($backup->id) : null); ?>">
-                            <?php $this->_('Vultr.tab_backups.restore_backup'); ?>
-                        </a>
-                    </td>
-                </tr>
-                <?php
-                    $i++;
-                } ?>
-            </tbody>
-        </table>
-        <script type="text/javascript">
-            $(document).ready(function() {
-                $('a.restore-backup').on('click', function() {
-                    $('#backupid').val($(this).attr('data-id'));
-                    $('#action').val('restore');
+<h6 class="form-section-header"><?php $this->_('Vultr.tab_backups.backups'); ?></h6>
+<div class="mb-3">
+    <?php if (($service_options->enable_backup ?? null) == 'enable') {
+        $this->Form->create();
+        $this->Form->fieldHidden('backupid', '', ['id' => 'backupid']);
+        $this->Form->fieldHidden('action', '', ['id' => 'action']);
+
+        if (!empty($backups)) { ?>
+    <table class="table">
+        <thead>
+            <tr>
+                <th><?php $this->_('Vultr.tab_backups.heading_row_backup_id'); ?></th>
+                <th><?php $this->_('Vultr.tab_backups.heading_row_date_created'); ?></th>
+                <th><?php $this->_('Vultr.tab_backups.heading_row_description'); ?></th>
+                <th><?php $this->_('Vultr.tab_backups.heading_row_options'); ?></th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php
+            $i = 0;
+            foreach ($backups as $backup) { ?>
+            <tr>
+                <td><strong><?php echo isset($backup->id) ? $this->Html->safe($backup->id) : null; ?></strong></td>
+                <td><?php echo isset($backup->date_created) ? $this->Html->safe($backup->date_created) : null; ?></td>
+                <td><?php echo isset($backup->description) ? $this->Html->safe($backup->description) : null; ?></td>
+                <td>
+                    <button type="button" class="btn btn-sm btn-outline-secondary restore-backup submit"
+                        data-id="<?php echo isset($backup->id) ? $this->Html->safe($backup->id) : null; ?>"
+                        title="<?php $this->_('Vultr.tab_backups.restore_backup'); ?>">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </button>
+                </td>
+            </tr>
+                    <?php $i++;
+            }
+            ?>
+        </tbody>
+    </table>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.restore-backup').forEach(function(el) {
+                el.addEventListener('click', function() {
+                    document.getElementById('backupid').value = this.getAttribute('data-id');
+                    document.getElementById('action').value = 'restore';
                 });
             });
-        </script>
-        <?php
-            } else {
-                ?>
-        <div class="empty_section">
-            <div class="empty_box"><?php $this->_('Vultr.tab_backups.no_backups'); ?></div>
-        </div>
-        <?php
-            }
-            $this->Form->end();
-        } else {
-            ?>
-        <div class="empty_section">
-            <div class="empty_box"><?php $this->_('Vultr.tab_backups.backups_disabled'); ?></div>
-        </div>
-        <?php
-        }
-        ?>
+        });
+    </script>
+        <?php } else { ?>
+    <div class="text-center py-5 text-muted">
+        <i class="bi bi-inbox" style="font-size: 3rem; opacity: 0.3;"></i>
+        <p class="mt-3 mb-0"><?php $this->_('Vultr.tab_backups.no_backups'); ?></p>
     </div>
+        <?php }
+                    $this->Form->end();
+    } else {
+        ?>
+    <div class="text-center py-5 text-muted">
+        <i class="bi bi-inbox" style="font-size: 3rem; opacity: 0.3;"></i>
+        <p class="mt-3 mb-0"><?php $this->_('Vultr.tab_backups.backups_disabled'); ?></p>
+    </div>
+        <?php
+    } ?>
+</div>
