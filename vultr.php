@@ -196,7 +196,7 @@ class Vultr extends Module
                 try {
                     Cache::writeCache(
                         $service->package->meta->server_type . '_subids',
-                        base64_encode(safe_serialize($subids)),
+                        base64_encode(serialize($subids)),
                         strtotime(Configure::get('Blesta.cache_length')) - time(),
                         Configure::get('Blesta.company_id') . DS . 'modules' . DS . 'vultr' . DS
                     );
@@ -773,7 +773,7 @@ class Vultr extends Module
             try {
                 Cache::writeCache(
                     'locations',
-                    base64_encode(safe_serialize($locations)),
+                    base64_encode(serialize($locations)),
                     strtotime(Configure::get('Blesta.cache_length')) - time(),
                     Configure::get('Blesta.company_id') . DS . 'modules' . DS . 'vultr' . DS
                 );
@@ -1410,7 +1410,7 @@ class Vultr extends Module
 
         // Only provision the service if 'use_module' is true
         if ($vars['use_module'] == 'true') {
-            $this->log('api.vultr.com|create', safe_serialize($params), 'input', true);
+            $this->log('api.vultr.com|create', serialize($params), 'input', true);
 
             try {
                 // Initialize the Vultr API
@@ -1583,7 +1583,7 @@ class Vultr extends Module
                         ];
                     }
 
-                    $this->log('api.vultr.com|os_change', safe_serialize($params), 'input', true);
+                    $this->log('api.vultr.com|os_change', serialize($params), 'input', true);
                     $result = $this->parseResponse($vultr_api->osChange($params));
                 } else {
                     if ($package->meta->server_type == 'server') {
@@ -1598,7 +1598,7 @@ class Vultr extends Module
                         ];
                     }
 
-                    $this->log('api.vultr.com|app_change', safe_serialize($params), 'input', true);
+                    $this->log('api.vultr.com|app_change', serialize($params), 'input', true);
                     $result = $this->parseResponse($vultr_api->appChange($params));
                 }
             }
@@ -1621,12 +1621,12 @@ class Vultr extends Module
                     $params = [
                         'instance-id' => $service_fields->vultr_subid
                     ];
-                    $this->log('api.vultr.com|backup_enable', safe_serialize($params), 'input', true);
+                    $this->log('api.vultr.com|backup_enable', serialize($params), 'input', true);
                     $this->parseResponse($vultr_api->backupEnable($params));
 
                     // Updated backups to be daily
                     $params['type'] = 'daily';
-                    $this->log('api.vultr.com|backup_daily', safe_serialize($params), 'input', true);
+                    $this->log('api.vultr.com|backup_daily', serialize($params), 'input', true);
                     $this->parseResponse($vultr_api->backupSetSchedule($params));
                 } elseif ($vars['configoptions']['enable_backup'] != 'enable'
                     && (!$enable_backup || $enable_backup->option_value != 'disable')
@@ -1635,7 +1635,7 @@ class Vultr extends Module
                     $params = [
                         'instance-id' => $service_fields->vultr_subid
                     ];
-                    $this->log('api.vultr.com|backup_disable', safe_serialize($params), 'input', true);
+                    $this->log('api.vultr.com|backup_disable', serialize($params), 'input', true);
                     $this->parseResponse($vultr_api->backupDisable($params));
                 }
             }
@@ -1708,7 +1708,7 @@ class Vultr extends Module
                 $params = ['baremetal-id' => $service_fields->vultr_subid];
             }
 
-            $this->log('api.vultr.com|halt', safe_serialize($params), 'input', true);
+            $this->log('api.vultr.com|halt', serialize($params), 'input', true);
             $this->parseResponse($instances_api->halt($params));
         }
 
@@ -1754,7 +1754,7 @@ class Vultr extends Module
                 $params = ['baremetal-id' => $service_fields->vultr_subid];
             }
 
-            $this->log('api.vultr.com|reboot', safe_serialize($params), 'input', true);
+            $this->log('api.vultr.com|reboot', serialize($params), 'input', true);
             $this->parseResponse($instances_api->reboot($params));
         }
 
@@ -1800,7 +1800,7 @@ class Vultr extends Module
                 $params = ['baremetal-id' => $service_fields->vultr_subid];
             }
 
-            $this->log('api.vultr.com|destroy', safe_serialize($params), 'input', true);
+            $this->log('api.vultr.com|destroy', serialize($params), 'input', true);
             $this->parseResponse($instances_api->destroy($params));
         }
 
@@ -1853,7 +1853,7 @@ class Vultr extends Module
                 'instance-id' => $service_fields->vultr_subid,
                 'plan' => $package_to->meta->server_plan
             ];
-            $this->log('api.vultr.com|upgrade_plan', safe_serialize($params), 'input', true);
+            $this->log('api.vultr.com|upgrade_plan', serialize($params), 'input', true);
             $this->parseResponse($vultr_api->upgradePlan($params));
         }
 
@@ -1888,7 +1888,7 @@ class Vultr extends Module
         }
 
         // Get the server details
-        $this->log('api.vultr.com|get', safe_serialize($service_fields), 'input', true);
+        $this->log('api.vultr.com|get', serialize($service_fields), 'input', true);
         if ($package->meta->server_type == 'server') {
             $params = ['instance-id' => $service_fields->vultr_subid];
             $response = $this->parseResponse($vultr_api->get($params));
@@ -1948,7 +1948,7 @@ class Vultr extends Module
         }
 
         // Get the server details
-        $this->log('api.vultr.com|get', safe_serialize($service_fields), 'input', true);
+        $this->log('api.vultr.com|get', serialize($service_fields), 'input', true);
         if ($package->meta->server_type == 'server') {
             $params = ['instance-id' => $service_fields->vultr_subid];
             $response = $this->parseResponse($vultr_api->get($params));
@@ -2222,7 +2222,7 @@ class Vultr extends Module
                             $params = [
                                 $instance_key => $service_fields->vultr_subid
                             ];
-                            $this->log('api.vultr.com|ipv6Enable', safe_serialize($params), 'input', true);
+                            $this->log('api.vultr.com|ipv6Enable', serialize($params), 'input', true);
                             $this->parseResponse($vultr_api->ipv6Enable($params));
 
                             $this->Services->edit($service->id, ['vultr_enable_ipv6' => 'enable']);
@@ -2242,7 +2242,7 @@ class Vultr extends Module
         $params = [
             $instance_key => $service_fields->vultr_subid
         ];
-        $this->log('api.vultr.com|list', safe_serialize($params), 'input', true);
+        $this->log('api.vultr.com|list', serialize($params), 'input', true);
 
         if ($package->meta->server_type == 'server') {
             $response = $this->parseResponse($vultr_api->get($params));
