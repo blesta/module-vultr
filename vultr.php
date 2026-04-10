@@ -184,7 +184,7 @@ class Vultr extends Module
             Configure::get('Blesta.company_id') . DS . 'modules' . DS . 'vultr' . DS
         );
         if ($cache) {
-            $subids = unserialize(base64_decode($cache));
+            $subids = safe_unserialize(base64_decode($cache));
         }
 
         if (empty($subids)) {
@@ -730,7 +730,7 @@ class Vultr extends Module
         );
 
         if ($cache) {
-            return unserialize(base64_decode($cache));
+            return safe_unserialize(base64_decode($cache));
         }
 
         $api = $this->getApi($module_row->meta->api_key);
