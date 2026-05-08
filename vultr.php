@@ -1,6 +1,7 @@
 <?php
 
 use Blesta\Core\Util\Validate\Server;
+use Blesta\Core\Util\Common\Classes\Model;
 
 /**
  * Vultr Module.
@@ -184,7 +185,7 @@ class Vultr extends Module
             Configure::get('Blesta.company_id') . DS . 'modules' . DS . 'vultr' . DS
         );
         if ($cache) {
-            $subids = safe_unserialize(base64_decode($cache));
+            $subids = Model::safeUnserialize(base64_decode($cache));
         }
 
         if (empty($subids)) {
@@ -730,7 +731,7 @@ class Vultr extends Module
         );
 
         if ($cache) {
-            return safe_unserialize(base64_decode($cache));
+            return Model::safeUnserialize(base64_decode($cache));
         }
 
         $api = $this->getApi($module_row->meta->api_key);
