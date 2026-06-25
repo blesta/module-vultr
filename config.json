@@ -1,5 +1,5 @@
 {
-    "version": "3.0.0",
+    "version": "3.0.1",
     "name": "Vultr.name",
     "description": "Vultr.description",
     "authors": [
@@ -32,5 +32,8 @@
             "vultr_location"
         ]
     },
-    "icon": "bi-cloud"
+    "logo": {
+        "light": "views/default/images/logo.svg",
+        "dark": "views/default/images/logo-dark.svg"
+    }
 }
